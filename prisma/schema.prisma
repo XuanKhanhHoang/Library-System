@@ -16,11 +16,11 @@ datasource db {
 model user {
   id_user Int @id   @default(autoincrement())
   user_name String
-  pass_word String
+  pass_word String  
   is_librian Boolean @default(false)
   reader reader?
   marked_document marked_document[]
-
+  is_valid Boolean @default(true)
   @@map("users")
 }
 model major{        
@@ -36,6 +36,7 @@ model job_title{
     id_job_title Int @id @default(autoincrement())
     job_title_name  String
     reader reader[]
+    @@map("jobs_titles")
 }
 
 model reader{
@@ -43,7 +44,8 @@ model reader{
     name    String
     birth_date  DateTime
     phone_number    String
-    gender     Boolean?                                      //Male:true , female:false
+    gender     Boolean    @default(true)  //Male:true , female:false
+    avatar      String?                                
     id_job_title    Int
     id_user    Int      @unique
     id_major    Int
