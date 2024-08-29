@@ -13,7 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model user {
+model user { //bảng user
   id_user Int @id   @default(autoincrement())
   user_name String
   pass_word String  
@@ -23,7 +23,7 @@ model user {
   is_valid Boolean @default(true)
   @@map("users")
 }
-model major{        
+model major{    //bảng khoa
     id_major Int @id    @default(autoincrement())
     major_name String
     reader reader[]
@@ -32,14 +32,14 @@ model major{
     @@map("majors")
 }
 
-model job_title{
+model job_title{    //bảng chức danh: giáo viên, sinh viên
     id_job_title Int @id @default(autoincrement())
     job_title_name  String
     reader reader[]
     @@map("jobs_titles")
 }
 
-model reader{
+model reader{   //bảng độc giả
     id_reader Int @id   @default(autoincrement())
     name    String
     birth_date  DateTime
@@ -56,28 +56,28 @@ model reader{
     @@map("readers")
 }
 
-model category{
+model category{ //bảng phân loại
     id_category Int @id @default(autoincrement())
     category_name   String
     document document[]
     @@map("categories")
 }
 
-model author{
+model author{ //bảng tác giả
     id_author   Int @id @default(autoincrement())
     author_name String 
     document document[]
     @@map("authors")
 }
 
-model publisher{
+model publisher{    //bảng nhà xuất bản
     id_publisher    Int     @id @default(autoincrement())
     publisher_name  String
     document document[]
     @@map("publishers")
 }
 
-model document{
+model document{     //bảng tài liệu
     id_document     Int @id @default(autoincrement())
     document_name   String
     publish_year    DateTime
@@ -100,14 +100,14 @@ model document{
     @@map("documents")
 }
 
-model supplier{
+model supplier{     //bảng nhà cung cấp
     id_supplier Int @id @default(autoincrement())
     supplier_name   Int
     purchase document_purchase[]
     @@map("suppliers")
 }
 
-model document_purchase{
+model document_purchase{    //bảng nhập tài liệu
     id_purchase Int @id @default(autoincrement())
     id_document     Int
     id_supplier Int
@@ -118,7 +118,7 @@ model document_purchase{
     @@map("document_puchases")
 }
 
-model loan_request{
+model loan_request{     //bảng phiếu mượn
     id_loan_request  Int @id @default(autoincrement())
     id_document     Int
     loan_date DateTime
@@ -127,7 +127,7 @@ model loan_request{
     @@map("loan_requests")
 }
 
-model loan_request_list_document{
+model loan_request_list_document{   //bảng danh sách tài liệu mượn
     id Int @id @default(autoincrement())
     id_loan_request  Int
     quantity    Int         
@@ -135,7 +135,7 @@ model loan_request_list_document{
     document document @relation(fields:[id_document],references:[id_document])
     @@map("loan_request_list_documents")
 }
-model punishment{
+model punishment{   //bảng xử phạt
     id_punish   Int @id @default(autoincrement())
     reason String
     is_handled Boolean @default(false)
@@ -143,7 +143,7 @@ model punishment{
     @@map("punishments")
 }
 
-model loan_return_transaction{
+model loan_return_transaction{  //bảng mượn trả
     id_loan_return    Int @id @default(autoincrement())
     id_loan_request     Int
     id_reader   Int
@@ -158,7 +158,7 @@ model loan_return_transaction{
 
     @@map("loan_return_transactions")
 }
-model marked_document{
+model marked_document{  //bảng tài liệu được đánh dấu
     id Int @id @default(autoincrement())
     id_user Int 
     id_document Int
