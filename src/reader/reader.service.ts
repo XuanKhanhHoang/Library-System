@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetReaderListDTO } from './dto/getReaderList.dto';
+import { UpdateReaderDTO } from './dto/updateReader.dto';
 
 @Injectable()
 export class ReaderService {
@@ -62,5 +63,67 @@ export class ReaderService {
     if (!reader) throw new NotFoundException();
     if (reader.id_user != userId && !isManager) throw new ForbiddenException();
     return reader;
+  }
+  async UpdateReader(
+    userId: number,
+    isManager: boolean,
+    file: Express.Multer.File,
+    data: UpdateReaderDTO,
+  ) {
+    let reader = await this.prismaService.reader.findFirst({
+      where: {
+        id_reader: data.id_reader,
+      },
+      select: {
+        id_user: true,
+      },
+    });
+    if (!reader) throw new NotFoundException();
+    if (reader.id_user != userId && !isManager) throw new ForbiddenException();
+
+    const { id_job_title, id_major } = data;
+    let valid = await Promise.all([
+      this.prismaService.major
+        .findFirst({
+          where: {
+            id_major: id_major,
+          },
+        })
+        .then((res) => res != undefined),
+      this.prismaService.job_title
+        .findFirst({
+          where: {
+            id_job_title: id_job_title,
+          },
+        })
+        .then((res) => res != undefined),
+    ]);
+    if (valid[0] && valid[1]) throw new BadRequestException();
+
+    let avatar: string;
+    if (file != undefined) {
+      //TODO: Upload Avatar
+    }
+    await this.prismaService.reader.update({
+      where: {
+        id_reader: data.id_reader,
+      },
+      data: {
+        ...data,
+        avatar: file != undefined ? avatar : undefined,
+      },
+    });
+    return {
+      status: 'success',
+      message: 'update success for reader_id ' + data.id_reader,
+    };
+  }
+  async DeletePermanentReader(readerId: number) {
+    return { status: 'developing' };
+    // this.prismaService.reader.delete({
+    //   where:{
+    //     id_reader:readerId,
+    //   },
+    // })
   }
 }
