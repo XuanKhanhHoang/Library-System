@@ -6,6 +6,8 @@ import { ReaderModule } from './reader/reader.module';
 import { RoleGuard } from './auth/guards/role.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/guards/auth.guard';
+import { DocumentModule } from './document/document.module';
+import { ShareModule } from './share/share.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { AuthGuard } from './auth/guards/auth.guard';
     }),
     AuthModule,
     ReaderModule,
+    DocumentModule,
+    ShareModule,
   ],
   providers: [
     {

@@ -8,10 +8,14 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetReaderListDTO } from './dto/getReaderList.dto';
 import { UpdateReaderDTO } from './dto/updateReader.dto';
+import { ValidationService } from 'src/share/validation/validation.service';
 
 @Injectable()
 export class ReaderService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private validationService: ValidationService,
+  ) {}
 
   async GetReaderList({
     page = 1,
@@ -23,17 +27,23 @@ export class ReaderService {
     sort_by_col: sortByCol,
     sort_type: sortType = 'asc',
   }: GetReaderListDTO) {
-    const prismaModels = Prisma.dmmf.datamodel.models;
-    const model = prismaModels.find((model) => model.name === 'Reader');
-    const columnExists = model
-      ? model.fields.some((field) => field.name === sortByCol)
-      : false;
-    if (!columnExists) throw new BadRequestException("Collumn isn't exist");
-
+    if (
+      !this.validationService.IsCollumnExist('reader', sortByCol) ||
+      !(await this.validationService.IsMajorIdExist(majorId))
+    )
+      throw new NotFoundException(
+        "Collumn isn't exist or Major Id isn't exist",
+      );
     let readers = await this.prismaService.reader.findMany({
       skip: perPage * (page - 1),
       where: {
-        name: name,
+        name:
+          name != undefined
+            ? {
+                mode: 'insensitive',
+                contains: name,
+              }
+            : undefined,
         gender: gender,
         id_major: majorId,
         loan_return_transaction: {

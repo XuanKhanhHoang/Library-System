@@ -80,7 +80,7 @@ model publisher{    //bảng nhà xuất bản
 model document{     //bảng tài liệu
     id_document     Int @id @default(autoincrement())
     document_name   String
-    publish_year    DateTime
+    published_year    Int
     quantity    Int
     id_major    Int
     id_author   Int
