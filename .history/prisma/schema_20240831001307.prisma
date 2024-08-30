@@ -168,11 +168,7 @@ model marked_document{  //bảng tài liệu được đánh dấu
 }
 
 model media{  //bảng mượn trả
-    id  String   @id @default(uuid())
-	name String
-	file_name String
-	mime_type String
-	size Int
-	key String
-    @@map("media")
+    id    Int @id @default(autoincrement())
+    key   String
+    @@map("media_documents")
 }

@@ -10,7 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("localhost:5433")
 }
 
 model user { //bảng user
@@ -165,14 +165,4 @@ model marked_document{  //bảng tài liệu được đánh dấu
     user user @relation(fields: [id_user],references: [id_user])
 
     @@map("marked_documents")
-}
-
-model media{  //bảng mượn trả
-    id  String   @id @default(uuid())
-	name String
-	file_name String
-	mime_type String
-	size Int
-	key String
-    @@map("media")
 }

@@ -8,7 +8,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { DocumentModule } from './document/document.module';
 import { ShareModule } from './share/share.module';
-import { MediaModule } from './media/media.module';
 
 @Module({
   imports: [
@@ -19,10 +18,9 @@ import { MediaModule } from './media/media.module';
       signOptions: { expiresIn: '1h' },
     }),
     AuthModule,
-    ReaderModule,
+    // ReaderModule,
     DocumentModule,
     ShareModule,
-    MediaModule,
   ],
   // providers: [
   //   {

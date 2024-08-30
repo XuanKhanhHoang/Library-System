@@ -24,15 +24,15 @@ import { MediaModule } from './media/media.module';
     ShareModule,
     MediaModule,
   ],
-  // providers: [
-  //   {
-  //     provide: APP_GUARD,
-  //     useClass: AuthGuard,
-  //   },
-  //   {
-  //     provide: APP_GUARD,
-  //     useClass: RoleGuard,
-  //   },
-  // ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RoleGuard,
+    },
+  ],
 })
 export class AppModule {}
