@@ -28,6 +28,10 @@ export class GetDocumentsDTO {
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
+  author_id: number;
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => Number.parseInt(value))
   @Min(0)
   quantity: number;
   @IsOptional()

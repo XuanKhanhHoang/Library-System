@@ -24,6 +24,7 @@ export class DocumentService {
     max_quantity,
     min_quantity,
     published_year,
+    author_id,
   }: GetDocumentsDTO) {
     if (
       (category_id != undefined &&
@@ -31,7 +32,9 @@ export class DocumentService {
       (major_id != undefined &&
         !(await this.validationService.IsMajorIdExist(major_id))) ||
       (publisher_id != undefined &&
-        !(await this.validationService.IsPublisherIdExist(publisher_id)))
+        !(await this.validationService.IsPublisherIdExist(publisher_id))) ||
+      (author_id != undefined &&
+        !(await this.validationService.IsAuthorIdExist(author_id)))
     )
       throw new NotFoundException();
     if (
@@ -40,7 +43,7 @@ export class DocumentService {
       min_quantity > max_quantity
     )
       throw new BadRequestException();
-    return this.prismaService.document.findMany({
+    let documents = await this.prismaService.document.findMany({
       skip: (page - 1) * document_per_page,
       where: {
         document_name:
@@ -54,6 +57,7 @@ export class DocumentService {
         id_major: major_id,
         id_publisher: publisher_id,
         published_year: published_year,
+        id_author: author_id,
         quantity:
           quantity != undefined
             ? { equals: quantity }
@@ -61,6 +65,9 @@ export class DocumentService {
                 gte: min_quantity,
                 lte: max_quantity,
               },
+      },
+      include: {
+        author: true,
       },
     });
   }

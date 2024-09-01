@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetReaderListDTO } from './dto/getReaderList.dto';
 import { UpdateReaderDTO } from './dto/updateReader.dto';

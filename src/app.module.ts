@@ -3,9 +3,6 @@ import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReaderModule } from './reader/reader.module';
-import { RoleGuard } from './auth/guards/role.guard';
-import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from './auth/guards/auth.guard';
 import { DocumentModule } from './document/document.module';
 import { ShareModule } from './share/share.module';
 
@@ -22,15 +19,15 @@ import { ShareModule } from './share/share.module';
     DocumentModule,
     ShareModule,
   ],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RoleGuard,
-    },
-  ],
+  // providers: [
+  //   {
+  //     provide: APP_GUARD,
+  //     useClass: AuthGuard,
+  //   },
+  //   {
+  //     provide: APP_GUARD,
+  //     useClass: RoleGuard,
+  //   },
+  // ],
 })
 export class AppModule {}
