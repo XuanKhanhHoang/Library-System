@@ -7,16 +7,9 @@ import {
   IsOptional,
   Min,
 } from 'class-validator';
+import { ListCanBeSortDTO, PaginationDto } from 'src/share/dto/base.dto';
 
-export class GetReaderListDTO {
-  @IsOptional()
-  @Transform(({ value }) => Number.parseInt(value))
-  @Min(1)
-  page: number | undefined;
-  @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  reader_per_page: number | undefined;
+export class GetReaderListDTO extends ListCanBeSortDTO {
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => Boolean(value))
@@ -26,13 +19,6 @@ export class GetReaderListDTO {
   @IsOptional()
   @IsBoolean()
   gender: boolean | undefined;
-  @IsOptional()
-  @IsNotEmpty()
-  sort_by_col: string | undefined;
-  @IsOptional()
-  @IsNotEmpty()
-  @IsIn(['asc', 'desc'])
-  sort_type: 'asc' | 'desc' | undefined;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))

@@ -27,8 +27,9 @@ import { RequestObject } from 'src/auth/dto/request.dto';
 import { GetReaderListDTO } from './dto/getReaderList.dto';
 import { UpdateReaderDTO } from './dto/updateReader.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RoleGuard } from 'src/auth/guards/role.guard';
 
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RoleGuard)
 @Controller('reader')
 export class ReaderController {
   constructor(private ReaderService: ReaderService) {}

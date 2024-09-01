@@ -1,46 +1,45 @@
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsOptional, Max, Min } from 'class-validator';
-import { ListCanBeSortDTO, PaginationDto } from 'src/share/dto/base.dto';
+import { IsOptional, IsNumber, Min, IsNotEmpty } from 'class-validator';
 
-export class GetDocumentsDTO extends ListCanBeSortDTO {
+export class UpdateDocumentDTO {
+  @IsNotEmpty()
+  @IsNumber()
+  @Transform(({ value }) => Number.parseInt(value))
+  document_id?: number;
+
   @IsOptional()
   @IsNotEmpty()
-  name: string | undefined;
+  document_name?: string;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  major_id: number;
+  @Min(new Date().getFullYear())
+  published_year?: number;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  publisher_id: number;
+  @Min(1)
+  quantity?: number;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  category_id: number;
+  major_id?: number;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  author_id: number;
+  author_id?: number;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  @Min(0)
-  quantity: number;
+  publisher_id?: number;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  @Min(0)
-  min_quantity: number;
+  category_id?: number;
   @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  @Min(0)
-  max_quantity: number;
   @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  @Min(1950)
-  @Max(new Date().getFullYear())
-  published_year: number;
+  description?: string;
+}
+export class UpdateDocumentFullDTO extends UpdateDocumentDTO {
+  file?: Express.Multer.File;
 }

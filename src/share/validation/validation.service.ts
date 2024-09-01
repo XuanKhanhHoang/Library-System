@@ -15,7 +15,7 @@ export class ValidationService {
   }
   async IsMajorIdExist(majorId: number) {
     return (
-      (await this.prismaService.major.findUnique({
+      (await this.prismaService.major.findUniqueOrThrow({
         where: {
           id_major: majorId,
         },
@@ -24,7 +24,7 @@ export class ValidationService {
   }
   async IsCategoryIdExist(categoryId: number) {
     return (
-      (await this.prismaService.category.findUnique({
+      (await this.prismaService.category.findUniqueOrThrow({
         where: {
           id_category: categoryId,
         },
@@ -33,7 +33,7 @@ export class ValidationService {
   }
   async IsPublisherIdExist(publisherId: number) {
     return (
-      (await this.prismaService.publisher.findUnique({
+      (await this.prismaService.publisher.findUniqueOrThrow({
         where: {
           id_publisher: publisherId,
         },
@@ -42,7 +42,7 @@ export class ValidationService {
   }
   async IsAuthorIdExist(authorId: number) {
     return (
-      (await this.prismaService.author.findUnique({
+      (await this.prismaService.author.findUniqueOrThrow({
         where: {
           id_author: authorId,
         },

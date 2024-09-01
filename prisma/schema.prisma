@@ -86,9 +86,9 @@ model document{     //bảng tài liệu
     id_author   Int
     id_publisher    Int
     id_category     Int
-    description String
-    image       String
-    status      String
+    description String?
+    image       String?
+    status      String  @default("Exist")
     major major @relation(fields:[id_major],references:[id_major])
     author author @relation(fields: [id_author], references: [id_author])
     publisher publisher @relation(fields: [id_publisher], references: [id_publisher])

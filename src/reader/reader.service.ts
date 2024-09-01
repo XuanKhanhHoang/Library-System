@@ -18,7 +18,7 @@ export class ReaderService {
 
   async GetReaderList({
     page = 1,
-    reader_per_page: perPage = 6,
+    limit: perPage = 6,
     is_punishing: isPunishing,
     name,
     gender,
@@ -53,9 +53,12 @@ export class ReaderService {
           },
         },
       },
-      orderBy: {
-        [sortByCol]: sortType,
-      },
+      orderBy:
+        sortByCol != undefined
+          ? {
+              [sortByCol]: sortType || 'asc',
+            }
+          : undefined,
     });
     return {
       total_page: readers.length / perPage,
