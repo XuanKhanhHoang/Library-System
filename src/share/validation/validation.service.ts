@@ -40,4 +40,13 @@ export class ValidationService {
       })) != undefined
     );
   }
+  async IsAuthorIdExist(authorId: number) {
+    return (
+      (await this.prismaService.author.findUnique({
+        where: {
+          id_author: authorId,
+        },
+      })) != undefined
+    );
+  }
 }

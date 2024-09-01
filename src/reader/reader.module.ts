@@ -5,5 +5,6 @@ import { ReaderService } from './reader.service';
 @Module({
   controllers: [ReaderController],
   providers: [ReaderService],
+  exports: [ReaderService],
 })
 export class ReaderModule {}
