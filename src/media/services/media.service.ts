@@ -18,11 +18,12 @@ export class MediaService {
   }
 
   getLinkMediaKey(media_key) {
+    const ONE_YEAR_EXPIRES = 60 * 60 * 24 * 365;
     const s3 = this.getS3();
     return s3.getSignedUrl('getObject', {
       Key: media_key,
       Bucket: this.publicBucketName,
-      Expires: 60 * 60 * 12,
+      Expires: ONE_YEAR_EXPIRES,
     });
   }
 
