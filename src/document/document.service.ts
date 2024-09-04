@@ -91,6 +91,7 @@ export class DocumentService {
       },
       include: {
         author: true,
+        image: true,
       },
       orderBy:
         sort_by_col != undefined
@@ -131,7 +132,6 @@ export class DocumentService {
     }
     let { id_document } = await this.prismaService.document.create({
       data: {
-        image,
         document_name,
         quantity,
         description,
@@ -187,7 +187,6 @@ export class DocumentService {
         id_document: document_id,
       },
       data: {
-        image,
         document_name,
         quantity,
         description,

@@ -79,7 +79,7 @@ model publisher{    //bảng nhà xuất bản
 }
 
 model document{     //bảng tài liệu
-    id_document     Int @id @default(autoincrement())
+    id_document     Int @id @default(autoincrement())   
     document_name   String
     published_year    Int
     quantity    Int
@@ -88,7 +88,7 @@ model document{     //bảng tài liệu
     id_publisher    Int
     id_category     Int
     description String?
-    image       String?
+    image document_image[] 
     major major @relation(fields:[id_major],references:[id_major])
     author author @relation(fields: [id_author], references: [id_author])
     publisher publisher @relation(fields: [id_publisher], references: [id_publisher])
@@ -97,6 +97,14 @@ model document{     //bảng tài liệu
     loan_request_list_document loan_list_document[] 
 
     @@map("documents")
+}
+model document_image{
+    id Int @id @default(autoincrement())
+    id_document Int 
+    image String @unique 
+    document document @relation(fields: [id_document],references: [id_document])
+    
+    @@map("docment_images")
 }
 
 model supplier{     //bảng nhà cung cấp
@@ -164,8 +172,8 @@ model marked_document{  //bảng tài liệu được đánh dấu
     @@map("marked_documents")
 }
 
-model media{  //bảng mượn trả
-    id  String   @id @default(uuid())
+model media{ 
+    id  Int   @id @default(autoincrement())
 	name String
 	file_name String
 	mime_type String
