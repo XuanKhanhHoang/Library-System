@@ -14,50 +14,41 @@ datasource db {
 }
 
 model user {
-    id_user      Int      @id @default(autoincrement())
-    user_name    String
-    pass_word    String
-    name         String
-    gender       Boolean  @default(true) //Male:true , female:false
-    birth_date   DateTime
-    phone_number String?
-    avatar       String?
-    is_valid     Boolean  @default(true)
-    is_librian   Boolean  @default(false)
+    id_user                         Int                       @id @default(autoincrement())
+    user_name                       String
+    pass_word                       String
+    name                            String
+    gender                          Boolean                   @default(true) //Male:true , female:false
+    birth_date                      DateTime
+    phone_number                    String?
+    avatar                          String?
+    is_valid                        Boolean                   @default(true)
+    is_librian                      Boolean                   @default(false)
+    id_job_title                    Int?
+    id_major                        Int?
+    job_title                       job_title?                @relation(fields: [id_job_title], references: [id_job_title])
+    major                           major?                    @relation(fields: [id_major], references: [id_major]) //n-1 declare one time in n-model
+    loan_return_transaction         loan_return_transaction[] @relation(name: "reader")
+    loan_return_transaction_librian loan_return_transaction[] @relation(name: "librian")
 
-    reader                  reader?
-    loan_return_transaction loan_return_transaction[]
+    loan_request    loan_request[]
+    marked_document marked_document[]
 
     @@map("users")
 }
 
-model reader {
-    id_reader               Int                       @id @default(autoincrement())
-    id_job_title            Int
-    id_user                 Int                       @unique
-    id_major                Int
-    user                    user                      @relation(fields: [id_user], references: [id_user]) //1-1   declare one time in optional model
-    job_title               job_title                 @relation(fields: [id_job_title], references: [id_job_title])
-    major                   major                     @relation(fields: [id_major], references: [id_major]) //n-1 declare one time in n-model
-    loan_return_transaction loan_return_transaction[]
-    loan_request            loan_request[]
-    marked_document         marked_document[]
-
-    @@map("readers")
-}
-
 model major {
-    id_major   Int      @id @default(autoincrement())
+    id_major   Int    @id @default(autoincrement())
     major_name String
-    reader     reader[]
+    user       user[]
 
     @@map("majors")
 }
 
 model job_title {
-    id_job_title   Int      @id @default(autoincrement())
+    id_job_title   Int    @id @default(autoincrement())
     job_title_name String
-    reader         reader[]
+    user           user[]
 
     @@map("jobs_titles")
 }
@@ -135,7 +126,7 @@ model loan_request {
     id_reader             Int
     id_loan_list_document Int
     create_at             DateTime             @default(now())
-    reader                reader               @relation(fields: [id_reader], references: [id_reader])
+    user                  user                 @relation(fields: [id_reader], references: [id_user])
     loan_list_documents   loan_list_document[]
 
     @@map("loan_requests")
@@ -163,18 +154,18 @@ model loan_return_transaction {
     create_at          DateTime             @default(now())
     is_returned        Boolean              @default(false)
     punishment         punishment?          @relation(fields: [id_punish], references: [id_punish])
-    reader             reader               @relation(fields: [id_reader], references: [id_reader])
-    librian            user                 @relation(fields: [id_libian], references: [id_user])
+    user               user                 @relation(fields: [id_reader], references: [id_user], name: "reader")
+    librian            user                 @relation(fields: [id_libian], references: [id_user], name: "librian")
     loan_list_document loan_list_document[]
 
     @@map("loan_return_transactions")
 }
 
 model marked_document {
-    id          Int    @id @default(autoincrement())
+    id          Int  @id @default(autoincrement())
     id_reader   Int
     id_document Int
-    reader      reader @relation(fields: [id_reader], references: [id_reader])
+    reader      user @relation(fields: [id_reader], references: [id_user])
 
     @@map("marked_documents")
 }
