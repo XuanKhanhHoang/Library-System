@@ -62,38 +62,39 @@ model category {
 }
 
 model document_ref_category {
-    document_id Int
+    ISBN        String
     category_id Int
     category    category @relation(fields: [category_id], references: [id_category])
-    document    document @relation(fields: [document_id], references: [id_document])
+    document    document @relation(fields: [ISBN], references: [ISBN])
 
-    @@id([document_id, category_id])
+    @@id([ISBN, category_id])
 }
 
 model document_variant {
     variant_id            Int                     @id @default(autoincrement())
-    document_id           Int                     @unique
+    ISBN                  String
     quantity              Int
     published_date        DateTime
-    document              document                @relation(fields: [document_id], references: [id_document])
+    document              document                @relation(fields: [ISBN], references: [ISBN])
     document_puchase_list document_puchase_list[]
     loan_list_document    loan_list_document[]
+    image                 document_image[]
 
     @@map("document_variants")
 }
 
 model document {
-    id_document           Int                     @id @default(autoincrement())
-    document_name         String
-    id_author             Int
-    id_publisher          Int
-    id_category           Int
-    description           String?
-    image                 document_image[]
-    author                author                  @relation(fields: [id_author], references: [id_author])
-    publisher             publisher               @relation(fields: [id_publisher], references: [id_publisher])
-    variants              document_variant[]
-    document_ref_category document_ref_category[]
+    ISBN                       String                       @id
+    document_name              String
+    id_author                  Int
+    id_publisher               Int
+    id_category                Int
+    description                String?
+    author                     author                       @relation(fields: [id_author], references: [id_author])
+    publisher                  publisher                    @relation(fields: [id_publisher], references: [id_publisher])
+    variants                   document_variant[]
+    document_ref_category      document_ref_category[]
+    loan_request_list_document loan_request_list_document[]
 
     @@map("documents")
 }
@@ -122,27 +123,37 @@ model document_puchase_list {
 }
 
 model loan_request {
-    id_loan_request       Int                  @id @default(autoincrement())
-    id_reader             Int
-    id_loan_list_document Int
-    create_at             DateTime             @default(now())
-    user                  user                 @relation(fields: [id_reader], references: [id_user])
-    loan_list_documents   loan_list_document[]
+    id_loan_request             Int                          @id @default(autoincrement())
+    id_reader                   Int
+    id_loan_list_document       Int
+    create_at                   DateTime                     @default(now())
+    user                        user                         @relation(fields: [id_reader], references: [id_user])
+    loan_request_list_documents loan_request_list_document[]
 
     @@map("loan_requests")
 }
 
 model loan_list_document {
-    id_loan_request         Int
     quantity                Int
     id_variant              Int
-    id_loan_return          Int                     @unique
+    id_loan_return          Int
+    note                    String                  @db.VarChar(300)
     variant                 document_variant        @relation(fields: [id_variant], references: [variant_id])
-    loan_request            loan_request            @relation(fields: [id_loan_request], references: [id_loan_request])
     loan_return_transaction loan_return_transaction @relation(fields: [id_loan_return], references: [id_loan_return])
 
-    @@id([id_loan_request, id_variant])
+    @@id([id_loan_return, id_variant])
     @@map("loan_list_documents")
+}
+
+model loan_request_list_document {
+    id_loan_request Int
+    quantity        Int
+    isbn            String
+    documnet        document     @relation(fields: [isbn], references: [ISBN])
+    loan_request    loan_request @relation(fields: [id_loan_request], references: [id_loan_request])
+
+    @@id([isbn, id_loan_request])
+    @@map("loan_request_list_document")
 }
 
 model loan_return_transaction {
@@ -195,10 +206,10 @@ model supplier {
 }
 
 model document_image {
-    id          Int      @id @default(autoincrement())
-    id_document Int
-    image       String   @unique
-    document    document @relation(fields: [id_document], references: [id_document])
+    id      Int              @id @default(autoincrement())
+    vid     Int
+    image   String           @unique
+    variant document_variant @relation(fields: [vid], references: [variant_id])
 
     @@map("docment_images")
 }
