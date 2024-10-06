@@ -95,7 +95,7 @@ model document {
     variants                   document_variant[]
     document_ref_category      document_ref_category[]
     loan_request_list_document loan_request_list_document[]
-
+    marked                     marked_document[]
     @@map("documents")
 }
 
@@ -175,9 +175,9 @@ model loan_return_transaction {
 model marked_document {
     id          Int  @id @default(autoincrement())
     id_reader   Int
-    id_document Int
-    reader      user @relation(fields: [id_reader], references: [id_user])
-
+    ISBN        String
+    reader      user    @relation(fields: [id_reader], references: [id_user])
+    document    document @relation(fields: [ISBN], references: [ISBN])
     @@map("marked_documents")
 }
 
