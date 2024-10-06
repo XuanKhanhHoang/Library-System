@@ -19,7 +19,7 @@ export class AuthService {
     let { pass_word: userLoginPassword, user_name: userName } = body;
     userName = userName.toLocaleLowerCase();
     try {
-      let { pass_word, id_user, reader } =
+      let { pass_word, id_user, avatar, name, user_name } =
         await this.prismaService.user.findFirstOrThrow({
           where: {
             user_name: userName,
@@ -29,47 +29,57 @@ export class AuthService {
           select: {
             pass_word: true,
             id_user: true,
-            reader: {
-              select: {
-                name: true,
-                avatar: true,
-                gender: true,
-                job_title: {
-                  select: {
-                    job_title_name: true,
-                  },
-                },
-              },
-            },
+            avatar: true,
+            name: true,
+            user_name: true,
           },
         }); //P2025
       if (!pass_word) throw new InternalServerErrorException();
       if (!(await bcrypt.compare(userLoginPassword, pass_word)))
-        throw new UnauthorizedException();
+        throw new UnauthorizedException('');
       let access_token = await this.jwtService.signAsync({
         id_user: id_user,
         is_librian: isManager,
       });
-      if (!isManager)
-        return {
-          access_token,
-          user_info: {
-            id_user: id_user,
-            avatar: reader.avatar,
-            name: reader.name,
-            gender: reader.gender,
-            job_title: reader.job_title.job_title_name,
-          },
-        };
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
       return {
-        access_token,
+        access_token: {
+          token: access_token,
+          iat: new Date().getTime(),
+          exp: now.getTime(),
+        },
         user_info: {
           id_user: id_user,
+          avatar: avatar,
+          name: name,
+          user_name: user_name,
         },
       };
     } catch (e) {
-      if (e.code == 'P2025') throw new NotFoundException();
+      if (e.code == 'P2025') throw new UnauthorizedException('');
       throw e;
     }
+  }
+  async AuthToken({
+    id_user,
+    is_librian,
+  }: {
+    id_user: number;
+    is_librian: boolean;
+  }) {
+    let access_token = await this.jwtService.signAsync({
+      id_user: id_user,
+      is_librian: is_librian,
+    });
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    return {
+      access_token: {
+        token: access_token,
+        iat: new Date().getTime(),
+        exp: now.getTime(),
+      },
+    };
   }
 }

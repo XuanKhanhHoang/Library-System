@@ -5,7 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class ValidationService {
   constructor(private prismaService: PrismaService) {}
-  IsCollumnExist(modelName: string, collumn: string) {
+  IsColumnExist(modelName: string, collumn: string) {
     const prismaModels = Prisma.dmmf.datamodel.models;
     const model = prismaModels.find((model) => model.name === modelName);
     const columnExists = model
@@ -15,7 +15,7 @@ export class ValidationService {
   }
   async IsMajorIdExist(majorId: number) {
     return (
-      (await this.prismaService.major.findUniqueOrThrow({
+      (await this.prismaService.major.findUnique({
         where: {
           id_major: majorId,
         },
@@ -24,7 +24,7 @@ export class ValidationService {
   }
   async IsCategoryIdExist(categoryId: number) {
     return (
-      (await this.prismaService.category.findUniqueOrThrow({
+      (await this.prismaService.category.findUnique({
         where: {
           id_category: categoryId,
         },
@@ -33,7 +33,7 @@ export class ValidationService {
   }
   async IsPublisherIdExist(publisherId: number) {
     return (
-      (await this.prismaService.publisher.findUniqueOrThrow({
+      (await this.prismaService.publisher.findUnique({
         where: {
           id_publisher: publisherId,
         },
@@ -42,9 +42,18 @@ export class ValidationService {
   }
   async IsAuthorIdExist(authorId: number) {
     return (
-      (await this.prismaService.author.findUniqueOrThrow({
+      (await this.prismaService.author.findUnique({
         where: {
           id_author: authorId,
+        },
+      })) != undefined
+    );
+  }
+  async IsUserIdExist(userId: number) {
+    return (
+      (await this.prismaService.user.findUnique({
+        where: {
+          id_user: userId,
         },
       })) != undefined
     );

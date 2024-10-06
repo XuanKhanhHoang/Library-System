@@ -1,46 +1,55 @@
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsDate,
+  IsDateString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  Max,
+  MaxDate,
+  Min,
+  MinDate,
+} from 'class-validator';
 import { ListCanBeSortDTO, PaginationDto } from 'src/share/dto/base.dto';
 
 export class GetDocumentsDTO extends ListCanBeSortDTO {
   @IsOptional()
   @IsNotEmpty()
-  name: string | undefined;
+  isbn?: string;
+  @IsOptional()
+  @IsNotEmpty()
+  name?: string;
+  @IsOptional()
+  @IsNotEmpty()
+  publisher_name?: string;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  major_id: number;
+  publisher_id?: number;
+  @IsOptional()
+  @IsNotEmpty()
+  author_name?: string;
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  publisher_id: number;
+  author_id?: number;
   @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  category_id: number;
+  @Transform(({ value }) => {
+    return Array.isArray(value)
+      ? value.map((item) => parseInt(item, 10)).filter((item) => !isNaN(item))
+      : isNaN(parseInt(value, 10))
+        ? undefined
+        : [parseInt(value, 10)];
+  })
+  category_ids?: number[];
   @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  author_id: number;
+  @IsNotEmpty()
+  category_name?: string;
   @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  @Min(0)
-  quantity: number;
-  @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  @Min(0)
-  min_quantity: number;
-  @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  @Min(0)
-  max_quantity: number;
-  @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  @Min(1950)
-  @Max(new Date().getFullYear())
-  published_year: number;
+  @IsDate()
+  @Transform(({ value }) => new Date(value))
+  @MinDate(new Date(1960, 1, 1))
+  @MaxDate(new Date())
+  published_date: number;
 }

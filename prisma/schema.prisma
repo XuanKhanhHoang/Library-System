@@ -5,7 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
+    previewFeatures = ["omitApi"]
 }
 
 datasource db {
@@ -88,7 +89,6 @@ model document {
     document_name              String
     id_author                  Int
     id_publisher               Int
-    id_category                Int
     description                String?
     author                     author                       @relation(fields: [id_author], references: [id_author])
     publisher                  publisher                    @relation(fields: [id_publisher], references: [id_publisher])
@@ -199,7 +199,7 @@ model publisher {
 
 model supplier {
     id_supplier   Int                 @id @default(autoincrement())
-    supplier_name Int
+    supplier_name String
     purchase      document_purchase[]
 
     @@map("suppliers")

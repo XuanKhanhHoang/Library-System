@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -12,6 +13,11 @@ export class RoleGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<string[]>('isPublic', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
     const request = context.switchToHttp().getRequest();
     const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
       context.getHandler(),
@@ -26,13 +32,9 @@ export class RoleGuard implements CanActivate {
         is_librian: boolean;
       };
     };
-
-    if (
-      requiredRoles.some((role) => role == Role.Manager) &&
-      user.is_librian == true
-    )
-      return true;
-    else if (requiredRoles.some((role) => role == Role.User)) return true;
-    else return false;
+    if (!user) throw new UnauthorizedException();
+    if (requiredRoles.some((role) => role == Role.Manager) && !user.is_librian)
+      throw new ForbiddenException();
+    return true;
   }
 }

@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './prisma/prisma.module';
-import { ReaderModule } from './reader/reader.module';
 import { DocumentModule } from './document/document.module';
 import { ShareModule } from './share/share.module';
 import { MediaModule } from './media/media.module';
+import { UserModule } from './user/user.module';
+import { HandleSimpleDataModule } from './handle-simple-data/handle-simple-data.module';
 
 @Module({
   imports: [
@@ -16,20 +17,11 @@ import { MediaModule } from './media/media.module';
       signOptions: { expiresIn: '1h' },
     }),
     AuthModule,
-    ReaderModule,
+    UserModule,
     DocumentModule,
     ShareModule,
-    MediaModule,
+    HandleSimpleDataModule,
+    // MediaModule,
   ],
-  // providers: [
-  //   {
-  //     provide: APP_GUARD,
-  //     useClass: AuthGuard,
-  //   },
-  //   {
-  //     provide: APP_GUARD,
-  //     useClass: RoleGuard,
-  //   },
-  // ],
 })
 export class AppModule {}

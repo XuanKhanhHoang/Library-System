@@ -16,31 +16,23 @@ export class DocumentService {
     private validationService: ValidationService,
   ) {}
   async GetDocuments({
-    category_id,
+    category_ids,
     limit: document_per_page = 6,
-    major_id,
-    name,
     page = 1,
     publisher_id,
-    quantity,
-    max_quantity,
-    min_quantity,
-    published_year,
     author_id,
     sort_by_col,
     sort_type,
+    published_date,
+    category_name,
+    author_name,
+    isbn,
+    name,
+    publisher_name,
   }: GetDocumentsDTO) {
     let valid = true;
     try {
       await Promise.all([
-        (async () => {
-          if (category_id == undefined) return true;
-          return await this.validationService.IsCategoryIdExist(category_id);
-        })(),
-        (async () => {
-          if (major_id == undefined) return true;
-          return await this.validationService.IsMajorIdExist(major_id);
-        })(),
         (async () => {
           if (publisher_id == undefined) return true;
           return await this.validationService.IsPublisherIdExist(publisher_id);
@@ -57,168 +49,182 @@ export class DocumentService {
       !valid ||
       (sort_by_col == undefined && sort_type != undefined) ||
       (sort_by_col != undefined &&
-        this.validationService.IsCollumnExist('document', sort_by_col))
+        !this.validationService.IsColumnExist('document', sort_by_col))
     )
       throw new NotFoundException();
-    if (
-      (quantity != undefined &&
-        (max_quantity != undefined || min_quantity != undefined)) ||
-      min_quantity > max_quantity
-    )
-      throw new BadRequestException();
     let documents = await this.prismaService.document.findMany({
       skip: (page - 1) * document_per_page,
       where: {
-        document_name:
-          name != undefined
-            ? {
-                contains: name,
+        document_ref_category: {
+          some: {
+            category_id: {
+              in: category_ids,
+            },
+            category: {
+              category_name: {
+                contains: category_name,
                 mode: 'insensitive',
-              }
-            : undefined,
-        id_category: category_id,
-        id_major: major_id,
-        id_publisher: publisher_id,
-        published_year: published_year,
-        id_author: author_id,
-        quantity:
-          quantity != undefined
-            ? { equals: quantity }
-            : {
-                gte: min_quantity,
-                lte: max_quantity,
               },
+            },
+          },
+        },
+        id_publisher: publisher_id,
+        id_author: author_id,
+        document_name: {
+          contains: name,
+          mode: 'insensitive',
+        },
+        ISBN: {
+          contains: isbn,
+          mode: 'insensitive',
+        },
+        author: {
+          author_name: {
+            contains: author_name,
+            mode: 'insensitive',
+          },
+        },
+        publisher: {
+          publisher_name: {
+            contains: publisher_name,
+            mode: 'insensitive',
+          },
+        },
       },
       include: {
         author: true,
-        image: true,
+        publisher: true,
+        document_ref_category: {
+          include: {
+            category: true,
+          },
+        },
       },
-      orderBy:
-        sort_by_col != undefined
-          ? {
-              [sort_by_col]: sort_type || 'asc',
-            }
-          : undefined,
+      orderBy: sort_by_col
+        ? {
+            [sort_by_col]: sort_type || 'asc',
+          }
+        : undefined,
     });
     return {
       data: documents,
-      total_page: documents.length / document_per_page,
+      total_page: Math.ceil(documents.length / document_per_page),
     };
   }
-  async CreateDocument({
-    author_id,
-    category_id,
-    document_name,
-    file,
-    major_id,
-    published_year,
-    publisher_id,
-    quantity,
-    description,
-  }: CreateDocumentFullDTO) {
-    try {
-      await Promise.all([
-        this.validationService.IsCategoryIdExist(category_id),
-        this.validationService.IsMajorIdExist(major_id),
-        this.validationService.IsPublisherIdExist(publisher_id),
-        this.validationService.IsAuthorIdExist(author_id),
-      ]);
-    } catch (e) {
-      throw new NotFoundException();
-    }
-    let image: string;
-    if (file != undefined) {
-      //TODO Upload Image
-    }
-    let { id_document } = await this.prismaService.document.create({
-      data: {
-        document_name,
-        quantity,
-        description,
-        published_year,
-        id_author: author_id,
-        id_category: category_id,
-        id_publisher: publisher_id,
-        id_major: major_id,
-      },
-      select: {
-        id_document: true,
-      },
-    });
+  // async CreateDocument({
+  //   author_id,
+  //   category_id,
+  //   document_name,
+  //   file,
+  //   major_id,
+  //   published_year,
+  //   publisher_id,
+  //   quantity,
+  //   description,
+  // }: CreateDocumentFullDTO) {
+  //   try {
+  //     await Promise.all([
+  //       this.validationService.IsCategoryIdExist(category_id),
+  //       this.validationService.IsMajorIdExist(major_id),
+  //       this.validationService.IsPublisherIdExist(publisher_id),
+  //       this.validationService.IsAuthorIdExist(author_id),
+  //     ]);
+  //   } catch (e) {
+  //     throw new NotFoundException();
+  //   }
+  //   let image: string;
+  //   if (file != undefined) {
+  //     //TODO Upload Image
+  //   }
+  //   let { id_document } = await this.prismaService.document.create({
+  //     data: {
+  //       document_name,
+  //       quantity,
+  //       description,
+  //       published_year,
+  //       id_author: author_id,
+  //       id_category: category_id,
+  //       id_publisher: publisher_id,
+  //       id_major: major_id,
+  //     },
+  //     select: {
+  //       id_document: true,
+  //     },
+  //   });
 
-    return {
-      status: 'success',
-      document_id: id_document,
-    };
-  }
-  async UpdateDocument({
-    author_id,
-    category_id,
-    document_name,
-    file,
-    major_id,
-    published_year,
-    publisher_id,
-    quantity,
-    description,
-    document_id,
-  }: UpdateDocumentFullDTO) {
-    try {
-      await Promise.all([
-        this.validationService.IsCategoryIdExist(category_id),
-        this.validationService.IsMajorIdExist(major_id),
-        this.validationService.IsPublisherIdExist(publisher_id),
-        this.validationService.IsAuthorIdExist(author_id),
-        this.prismaService.document.findUniqueOrThrow({
-          where: {
-            id_document: document_id,
-          },
-        }),
-      ]);
-    } catch (e) {
-      throw new NotFoundException();
-    }
-    let image: string;
-    if (file != undefined) {
-      //TODO Upload Image
-    }
-    let { id_document } = await this.prismaService.document.update({
-      where: {
-        id_document: document_id,
-      },
-      data: {
-        document_name,
-        quantity,
-        description,
-        published_year,
-        id_author: author_id,
-        id_category: category_id,
-        id_publisher: publisher_id,
-        id_major: major_id,
-      },
-      select: {
-        id_document: true,
-      },
-    });
+  //   return {
+  //     status: 'success',
+  //     document_id: id_document,
+  //   };
+  // }
+  // async UpdateDocument({
+  //   author_id,
+  //   category_id,
+  //   document_name,
+  //   file,
+  //   major_id,
+  //   published_year,
+  //   publisher_id,
+  //   quantity,
+  //   description,
+  //   document_id,
+  // }: UpdateDocumentFullDTO) {
+  //   try {
+  //     await Promise.all([
+  //       this.validationService.IsCategoryIdExist(category_id),
+  //       this.validationService.IsMajorIdExist(major_id),
+  //       this.validationService.IsPublisherIdExist(publisher_id),
+  //       this.validationService.IsAuthorIdExist(author_id),
+  //       this.prismaService.document.findUniqueOrThrow({
+  //         where: {
+  //           id_document: document_id,
+  //         },
+  //       }),
+  //     ]);
+  //   } catch (e) {
+  //     throw new NotFoundException();
+  //   }
+  //   let image: string;
+  //   if (file != undefined) {
+  //     //TODO Upload Image
+  //   }
+  //   let { id_document } = await this.prismaService.document.update({
+  //     where: {
+  //       id_document: document_id,
+  //     },
+  //     data: {
+  //       document_name,
+  //       quantity,
+  //       description,
+  //       published_year,
+  //       id_author: author_id,
+  //       id_category: category_id,
+  //       id_publisher: publisher_id,
+  //       id_major: major_id,
+  //     },
+  //     select: {
+  //       id_document: true,
+  //     },
+  //   });
 
-    return {
-      status: 'success',
-      document_id: id_document,
-    };
-  }
-  async GetDocument(document_id: number) {
-    let document = await this.prismaService.document.findUnique({
-      where: {
-        id_document: document_id,
-      },
-      include: {
-        author: true,
-        category: true,
-        major: true,
-        publisher: true,
-      },
-    });
-    if (!document) throw new NotFoundException();
-    return document;
-  }
+  //   return {
+  //     status: 'success',
+  //     document_id: id_document,
+  //   };
+  // }
+  // async GetDocument(document_id: number) {
+  //   let document = await this.prismaService.document.findUnique({
+  //     where: {
+  //       id_document: document_id,
+  //     },
+  //     include: {
+  //       author: true,
+  //       category: true,
+  //       major: true,
+  //       publisher: true,
+  //     },
+  //   });
+  //   if (!document) throw new NotFoundException();
+  //   return document;
+  // }
 }
