@@ -85,7 +85,7 @@ model document_variant {
 }
 
 model document {
-    document_id                Int                          @id
+    document_id                Int                          @id @default(autoincrement())
     document_name              String
     id_author                  Int
     id_publisher               Int
