@@ -16,4 +16,16 @@ export class HandleSimpleDataController {
   getJobTitle(@Query() qr) {
     return this.service.GetJobTitles();
   }
+  @Get('get_suppliers')
+  getSuppliers(@Query() qr) {
+    return this.service.GetSuppliers();
+  }
+  @Get('get_authors')
+  getAuthors(@Query() qr) {
+    return this.service.GetAuthors();
+  }
+  @Get('get_publishers')
+  getPublishers(@Query() qr) {
+    return this.service.GetPublishers();
+  }
 }

@@ -17,7 +17,10 @@ import {
 import { DocumentService } from './document.service';
 import { query } from 'express';
 import { GetDocumentsDTO } from './dto/getDocumnets.dto';
-import { CreateDocumentDTO } from './dto/createDocument.dto';
+import {
+  CreateDocumentDTO,
+  CreateVariantDTO,
+} from './dto/createDocumentAndVariant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -40,25 +43,49 @@ export class DocumentController {
   async GetDocument(@Query('document_id', ParseIntPipe) document_id: number) {
     return this.documentService.GetDocument(document_id);
   }
-  // @RequiredRoles(Role.Manager)
-  // @Post('manager/create_document')
-  // @UseInterceptors(FileInterceptor('image'))
-  // @HttpCode(201)
-  // async CreateDocument(
-  //   @UploadedFile(
-  //     new ParseFilePipe({
-  //       validators: [
-  //         new MaxFileSizeValidator({ maxSize: 3000 }),
-  //         new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
-  //       ],
-  //       fileIsRequired: false,
-  //     }),
-  //   )
-  //   file: Express.Multer.File,
-  //   @Body() data: CreateDocumentDTO,
-  // ) {
-  //   return this.documentService.CreateDocument({ ...data, file });
-  // }
+  @Public()
+  @Get('get_variant')
+  async GetVariants(@Query('isbn') isbn: string) {
+    return this.documentService.GetVariant(isbn);
+  }
+  @RequiredRoles(Role.Manager)
+  @Post('create_document')
+  @UseInterceptors(FileInterceptor('image'))
+  @HttpCode(201)
+  async CreateDocument(
+    @Body() data: CreateDocumentDTO,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 3000 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file?: Express.Multer.File,
+  ) {
+    return this.documentService.CreateDocument(data, file);
+  }
+  @RequiredRoles(Role.Manager)
+  @Post('create_variant')
+  @UseInterceptors(FileInterceptor('image'))
+  @HttpCode(201)
+  async CreateVariant(
+    @Body() data: CreateVariantDTO,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 3000 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file?: Express.Multer.File,
+  ) {
+    return this.documentService.CreateVariant(data, file);
+  }
   // @RequiredRoles(Role.Manager)
   // @Put('manager/update_document')
   // @UseInterceptors(FileInterceptor('image'))

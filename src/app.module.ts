@@ -19,9 +19,8 @@ import { HandleSimpleDataModule } from './handle-simple-data/handle-simple-data.
     AuthModule,
     UserModule,
     DocumentModule,
-    ShareModule,
     HandleSimpleDataModule,
-    // MediaModule,
+    ShareModule,
   ],
 })
 export class AppModule {}

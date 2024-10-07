@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Global, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
+@Global()
 @Injectable()
 export class ValidationService {
   constructor(private prismaService: PrismaService) {}
@@ -54,6 +55,15 @@ export class ValidationService {
       (await this.prismaService.user.findUnique({
         where: {
           id_user: userId,
+        },
+      })) != undefined
+    );
+  }
+  async IsDocumentIdExist(id: number) {
+    return (
+      (await this.prismaService.document.findUnique({
+        where: {
+          document_id: id,
         },
       })) != undefined
     );

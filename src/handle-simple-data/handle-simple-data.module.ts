@@ -4,6 +4,7 @@ import { HandleSimpleDataService } from './handle-simple-data.service';
 
 @Module({
   controllers: [HandleSimpleDataController],
-  providers: [HandleSimpleDataService]
+  providers: [HandleSimpleDataService],
+  exports: [HandleSimpleDataService],
 })
 export class HandleSimpleDataModule {}

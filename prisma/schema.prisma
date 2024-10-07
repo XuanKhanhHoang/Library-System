@@ -76,6 +76,7 @@ model document_variant {
     document_id           Int
     quantity              Int
     published_date        DateTime
+    name                  String
     document              document                @relation(fields: [document_id], references: [document_id])
     document_puchase_list document_puchase_list[]
     loan_list_document    loan_list_document[]

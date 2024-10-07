@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'nestjs-prisma';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { ValidationService } from 'src/share/validation/validation.service';
 
 @Injectable()
@@ -57,6 +57,22 @@ export class HandleSimpleDataService {
       data: {
         job_title_name: name,
       },
+    });
+  }
+  async GetSuppliers() {
+    return await this.prismaService.supplier.findMany({
+      where: {},
+    });
+  }
+
+  async GetAuthors() {
+    return await this.prismaService.author.findMany({
+      where: {},
+    });
+  }
+  async GetPublishers() {
+    return await this.prismaService.publisher.findMany({
+      where: {},
     });
   }
 }

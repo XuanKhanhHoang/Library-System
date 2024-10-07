@@ -6,7 +6,11 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetDocumentsDTO } from './dto/getDocumnets.dto';
 import { ValidationService } from 'src/share/validation/validation.service';
-import { CreateDocumentFullDTO } from './dto/createDocument.dto';
+import {
+  CreateDocumentDTO,
+  CreateDocumentFullDTO,
+  CreateVariantDTO,
+} from './dto/createDocumentAndVariant.dto';
 import { UpdateDocumentFullDTO } from './dto/updateDocument.dto';
 
 @Injectable()
@@ -26,7 +30,7 @@ export class DocumentService {
     published_date,
     category_name,
     author_name,
-    isbn,
+    document_id,
     name,
     publisher_name,
   }: GetDocumentsDTO) {
@@ -74,10 +78,7 @@ export class DocumentService {
           contains: name,
           mode: 'insensitive',
         },
-        ISBN: {
-          contains: isbn,
-          mode: 'insensitive',
-        },
+        document_id: document_id,
         author: {
           author_name: {
             contains: author_name,
@@ -111,8 +112,162 @@ export class DocumentService {
       total_page: Math.ceil(documents.length / document_per_page),
     };
   }
-  async GetDocument(isbn: string) {
-    let dc = await this.prismaService.document.findUnique();
+  async GetDocument(did: number) {
+    let dc = await this.prismaService.document.findUnique({
+      where: {
+        document_id: did,
+      },
+      include: {
+        author: true,
+        publisher: true,
+        document_ref_category: {
+          include: {
+            category: true,
+          },
+        },
+        variants: true,
+      },
+    });
+    if (!dc) throw new NotFoundException();
+    return dc;
+  }
+  async GetVariant(isbn: string) {
+    let v = await this.prismaService.document_variant.findUnique({
+      where: {
+        isbn: isbn,
+      },
+      include: {
+        image: true,
+      },
+    });
+    if (!v) throw new NotFoundException();
+    return v;
+  }
+  async CreateDocument(data: CreateDocumentDTO, image?: Express.Multer.File) {
+    try {
+      return await this.prismaService.$transaction(
+        async (service: PrismaService) => {
+          let check = data.categories.map((val) => {
+            return this.validationService.IsCategoryIdExist(val).then((res) => {
+              if (!res) throw new NotFoundException();
+              return res;
+            });
+          });
+          await Promise.all(check);
+
+          let { document_id } = await service.document.create({
+            data: {
+              document_name: data.document_name,
+              description: data.description,
+              id_author: data.author_id,
+              id_publisher: data.publisher_id,
+            },
+            select: {
+              document_id: true,
+            },
+          });
+          let d_ref_c = data.categories.map((val) => ({
+            document_id,
+            category_id: val,
+          }));
+          let vrs = data.variants.map((val) => ({
+            isbn: val.isbn,
+            document_id: document_id,
+            quantity: val.quantity,
+            published_date: val.published_date,
+            name: val.name,
+          }));
+          await Promise.all([
+            service.document_ref_category.createMany({
+              data: d_ref_c,
+            }),
+            service.document_variant.createMany({
+              data: vrs,
+            }),
+          ]);
+          return {
+            status: 'success',
+            message: `document with id is ${document_id} is created`,
+          };
+        },
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+  async CreateVariant(data: CreateVariantDTO, image?: Express.Multer.File) {
+    if (
+      (await this.validationService.IsDocumentIdExist(data.document_id)) ==
+      false
+    )
+      throw new NotFoundException();
+    await this.prismaService.document_variant.create({
+      data: {
+        isbn: data.isbn,
+        published_date: data.published_date,
+        quantity: data.quantity,
+        document_id: data.document_id,
+        name: data.name,
+      },
+      select: {
+        document_id: true,
+      },
+    });
+    return {
+      status: 'success',
+      message: `variant with isbn is ${data.isbn} is created`,
+    };
+  }
+  async UpdateDocument(data: CreateDocumentDTO, image?: Express.Multer.File) {
+    try {
+      return await this.prismaService.$transaction(
+        async (service: PrismaService) => {
+          let check = data.categories.map((val) => {
+            return this.validationService.IsCategoryIdExist(val).then((res) => {
+              if (!res) throw new NotFoundException();
+              return res;
+            });
+          });
+          await Promise.all(check);
+
+          let { document_id } = await service.document.create({
+            data: {
+              document_name: data.document_name,
+              description: data.description,
+              id_author: data.author_id,
+              id_publisher: data.publisher_id,
+            },
+            select: {
+              document_id: true,
+            },
+          });
+          let d_ref_c = data.categories.map((val) => ({
+            document_id,
+            category_id: val,
+          }));
+          let vrs = data.variants.map((val) => ({
+            isbn: val.isbn,
+            document_id: document_id,
+            quantity: val.quantity,
+            published_date: val.published_date,
+          }));
+          await Promise.all([
+            service.document_ref_category.createMany({
+              data: d_ref_c,
+            }),
+            // service.document_variant.createMany({
+            //   data: vrs,
+            // }),
+          ]);
+          return {
+            status: 'success',
+            message: `document with id is ${document_id} is created`,
+          };
+        },
+      );
+    } catch (error) {
+      throw error;
+    }
   }
   // async CreateDocument({
   //   author_id,

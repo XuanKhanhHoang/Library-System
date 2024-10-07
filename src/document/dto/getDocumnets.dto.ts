@@ -15,8 +15,9 @@ import { ListCanBeSortDTO, PaginationDto } from 'src/share/dto/base.dto';
 
 export class GetDocumentsDTO extends ListCanBeSortDTO {
   @IsOptional()
-  @IsNotEmpty()
-  isbn?: string;
+  @IsNumber()
+  @Transform(({ value }) => Number.parseInt(value))
+  document_id?: number;
   @IsOptional()
   @IsNotEmpty()
   name?: string;
