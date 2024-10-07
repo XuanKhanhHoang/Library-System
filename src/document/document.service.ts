@@ -111,6 +111,9 @@ export class DocumentService {
       total_page: Math.ceil(documents.length / document_per_page),
     };
   }
+  async GetDocument(isbn: string) {
+    let dc = await this.prismaService.document.findUnique();
+  }
   // async CreateDocument({
   //   author_id,
   //   category_id,

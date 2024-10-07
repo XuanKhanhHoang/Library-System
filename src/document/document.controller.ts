@@ -35,11 +35,11 @@ export class DocumentController {
   async GetPreviewDocument(@Query() query: GetDocumentsDTO) {
     return this.documentService.GetDocuments(query);
   }
-  // @Public()
-  // @Get('get_document')
-  // async GetDocument(@Query('document_id', ParseIntPipe) document_id: number) {
-  //   return this.documentService.GetDocument(document_id);
-  // }
+  @Public()
+  @Get('get_document')
+  async GetDocument(@Query('document_id', ParseIntPipe) document_id: number) {
+    return this.documentService.GetDocument(document_id);
+  }
   // @RequiredRoles(Role.Manager)
   // @Post('manager/create_document')
   // @UseInterceptors(FileInterceptor('image'))
