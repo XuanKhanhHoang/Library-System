@@ -7,6 +7,8 @@ import { ShareModule } from './share/share.module';
 import { MediaModule } from './media/media.module';
 import { UserModule } from './user/user.module';
 import { HandleSimpleDataModule } from './handle-simple-data/handle-simple-data.module';
+import { LoanRequestModule } from './loan_request/loan_request.module';
+import { LoanReturnTransactionModule } from './loan_return_transaction/loan_return_transaction.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { HandleSimpleDataModule } from './handle-simple-data/handle-simple-data.
     DocumentModule,
     HandleSimpleDataModule,
     ShareModule,
+    LoanRequestModule,
+    LoanReturnTransactionModule,
   ],
 })
 export class AppModule {}

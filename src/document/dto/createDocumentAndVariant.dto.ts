@@ -14,21 +14,26 @@ export class CreateDocumentDTO {
   @IsNotEmpty()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
-  major_id: number;
-  @IsNotEmpty()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
   author_id: number;
   @IsNotEmpty()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
   publisher_id: number;
+  @IsNotEmpty()
+  @IsNumber()
+  @Transform(({ value }) => Number.parseInt(value))
+  supplier_id: number;
+  @IsNotEmpty()
+  @IsDate()
+  @Transform(({ value }) => new Date(value))
+  purchase_date: Date;
   @IsOptional()
   @IsNotEmpty()
   description?: string;
   @IsNotEmpty()
   @IsArray()
   variants: CreateVariant[];
+
   @IsNotEmpty()
   @IsArray()
   @Transform(({ value }) => {
@@ -53,6 +58,18 @@ class CreateVariant {
   @IsDate()
   @Transform(({ value }) => new Date(value))
   published_date: Date;
+  @IsNotEmpty()
+  @IsNumber()
+  @Transform(({ value }) => Number.parseInt(value))
+  price: number;
+  @IsNotEmpty()
+  @IsNumber()
+  @Transform(({ value }) => Number.parseInt(value))
+  supplier_id: number;
+  @IsNotEmpty()
+  @IsDate()
+  @Transform(({ value }) => new Date(value))
+  purchase_date: Date;
 }
 export class CreateVariantDTO extends CreateVariant {
   @IsNotEmpty()

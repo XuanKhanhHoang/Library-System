@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,10 +9,11 @@ import { GetDocumentsDTO } from './dto/getDocumnets.dto';
 import { ValidationService } from 'src/share/validation/validation.service';
 import {
   CreateDocumentDTO,
-  CreateDocumentFullDTO,
   CreateVariantDTO,
 } from './dto/createDocumentAndVariant.dto';
-import { UpdateDocumentFullDTO } from './dto/updateDocument.dto';
+import { UpdateDocumentDTO } from './dto/updateDocumentAndVariant.dto';
+import { Prisma } from '@prisma/client';
+import { Config } from 'aws-sdk';
 
 @Injectable()
 export class DocumentService {
@@ -56,8 +58,45 @@ export class DocumentService {
         !this.validationService.IsColumnExist('document', sort_by_col))
     )
       throw new NotFoundException();
+    let count = await this.prismaService.document.count({
+      where: {
+        document_ref_category: {
+          some: {
+            category_id: {
+              in: category_ids,
+            },
+            category: {
+              category_name: {
+                contains: category_name,
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+        id_publisher: publisher_id,
+        id_author: author_id,
+        document_name: {
+          contains: name,
+          mode: 'insensitive',
+        },
+        document_id: document_id,
+        author: {
+          author_name: {
+            contains: author_name,
+            mode: 'insensitive',
+          },
+        },
+        publisher: {
+          publisher_name: {
+            contains: publisher_name,
+            mode: 'insensitive',
+          },
+        },
+      },
+    });
     let documents = await this.prismaService.document.findMany({
       skip: (page - 1) * document_per_page,
+      take: document_per_page,
       where: {
         document_ref_category: {
           some: {
@@ -109,7 +148,7 @@ export class DocumentService {
     });
     return {
       data: documents,
-      total_page: Math.ceil(documents.length / document_per_page),
+      total_page: Math.ceil(count / document_per_page),
     };
   }
   async GetDocument(did: number) {
@@ -143,7 +182,11 @@ export class DocumentService {
     if (!v) throw new NotFoundException();
     return v;
   }
-  async CreateDocument(data: CreateDocumentDTO, image?: Express.Multer.File) {
+  async CreateDocument(
+    id_user: number,
+    data: CreateDocumentDTO,
+    image?: Express.Multer.File,
+  ) {
     try {
       return await this.prismaService.$transaction(
         async (service: PrismaService) => {
@@ -153,19 +196,36 @@ export class DocumentService {
               return res;
             });
           });
-          await Promise.all(check);
+          await Promise.all(check); ///not enough check
 
-          let { document_id } = await service.document.create({
-            data: {
-              document_name: data.document_name,
-              description: data.description,
-              id_author: data.author_id,
-              id_publisher: data.publisher_id,
-            },
-            select: {
-              document_id: true,
-            },
-          });
+          let [document_id, purchase_id] = await Promise.all([
+            service.document
+              .create({
+                data: {
+                  document_name: data.document_name,
+                  description: data.description,
+                  id_author: data.author_id,
+                  id_publisher: data.publisher_id,
+                },
+                select: {
+                  document_id: true,
+                },
+              })
+              .then((res) => res.document_id),
+            service.document_purchase
+              .create({
+                data: {
+                  id_supplier: data.supplier_id,
+                  purchase_date: data.purchase_date,
+                  id_librarian: id_user,
+                },
+                select: {
+                  id_purchase: true,
+                },
+              })
+              .then((res) => res.id_purchase),
+          ]);
+
           let d_ref_c = data.categories.map((val) => ({
             document_id,
             category_id: val,
@@ -177,14 +237,30 @@ export class DocumentService {
             published_date: val.published_date,
             name: val.name,
           }));
-          await Promise.all([
+          let [, purchaseItems] = await Promise.all([
             service.document_ref_category.createMany({
               data: d_ref_c,
             }),
-            service.document_variant.createMany({
-              data: vrs,
-            }),
+            service.document_variant
+              .createManyAndReturn({
+                data: vrs,
+                select: {
+                  isbn: true,
+                },
+              })
+              .then((res) =>
+                res.map((item) => ({
+                  purchase_id,
+                  isbn: item.isbn,
+                  quantity: data.variants.find((it) => it.isbn == item.isbn)
+                    .quantity,
+                  price: data.variants.find((it) => it.isbn == item.isbn).price,
+                })),
+              ),
           ]);
+          await service.document_puchase_list.createMany({
+            data: purchaseItems,
+          });
           return {
             status: 'success',
             message: `document with id is ${document_id} is created`,
@@ -195,42 +271,78 @@ export class DocumentService {
       throw error;
     }
   }
-  async CreateVariant(data: CreateVariantDTO, image?: Express.Multer.File) {
+  async CreateVariant(
+    data: CreateVariantDTO,
+    id_user: number,
+    image?: Express.Multer.File,
+  ) {
     if (
       (await this.validationService.IsDocumentIdExist(data.document_id)) ==
       false
     )
       throw new NotFoundException();
-    await this.prismaService.document_variant.create({
-      data: {
-        isbn: data.isbn,
-        published_date: data.published_date,
-        quantity: data.quantity,
-        document_id: data.document_id,
-        name: data.name,
-      },
-      select: {
-        document_id: true,
-      },
-    });
-    return {
-      status: 'success',
-      message: `variant with isbn is ${data.isbn} is created`,
-    };
-  }
-  async UpdateDocument(data: CreateDocumentDTO, image?: Express.Multer.File) {
     try {
       return await this.prismaService.$transaction(
         async (service: PrismaService) => {
+          let purchase_id = await service.document_purchase
+            .create({
+              data: {
+                id_supplier: data.supplier_id,
+                purchase_date: data.purchase_date,
+                id_librarian: id_user,
+              },
+              select: {
+                id_purchase: true,
+              },
+            })
+            .then((res) => res.id_purchase);
+          await Promise.all([
+            service.document_variant.create({
+              data: {
+                isbn: data.isbn,
+                published_date: data.published_date,
+                quantity: data.quantity,
+                document_id: data.document_id,
+                name: data.name,
+              },
+            }),
+            service.document_puchase_list.create({
+              data: {
+                price: data.price,
+                quantity: data.quantity,
+                isbn: data.isbn,
+                purchase_id: purchase_id,
+              },
+            }),
+          ]);
+          return {
+            status: 'success',
+            message: `variant with isbn is ${data.isbn} is created`,
+          };
+        },
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+  async UpdateDocument(data: UpdateDocumentDTO, image?: Express.Multer.File) {
+    try {
+      return await this.prismaService.$transaction(
+        async (service: PrismaService) => {
+          const { document_id } = data;
           let check = data.categories.map((val) => {
             return this.validationService.IsCategoryIdExist(val).then((res) => {
               if (!res) throw new NotFoundException();
               return res;
             });
           });
+
           await Promise.all(check);
 
-          let { document_id } = await service.document.create({
+          await service.document.update({
+            where: {
+              document_id: data.document_id,
+            },
             data: {
               document_name: data.document_name,
               description: data.description,
@@ -241,27 +353,58 @@ export class DocumentService {
               document_id: true,
             },
           });
-          let d_ref_c = data.categories.map((val) => ({
-            document_id,
-            category_id: val,
-          }));
-          let vrs = data.variants.map((val) => ({
-            isbn: val.isbn,
-            document_id: document_id,
-            quantity: val.quantity,
-            published_date: val.published_date,
-          }));
-          await Promise.all([
-            service.document_ref_category.createMany({
-              data: d_ref_c,
-            }),
-            // service.document_variant.createMany({
-            //   data: vrs,
-            // }),
-          ]);
+          let d_ref_c = data.categories.map((val) => {
+            return service.document_ref_category.update({
+              where: {
+                document_id_category_id: {
+                  document_id,
+                  category_id: val,
+                },
+              },
+              data: {
+                category_id: val,
+              },
+            });
+          });
+          let vrs = data.variants.map((val) => {
+            return service.document_variant.upsert({
+              where: {
+                isbn: val.isbn,
+              },
+              update: {
+                isbn: val.isbn,
+                quantity: val.quantity,
+                published_date: val.published_date,
+                name: val.name,
+              },
+              create: {
+                isbn: val.isbn,
+                quantity: val.quantity,
+                published_date: val.published_date,
+                name: val.name,
+                document_id,
+              },
+              select: {
+                isbn: true,
+              },
+            });
+          });
+          let vrsDel = service.document_variant.deleteMany({
+            where: {
+              document_id,
+              isbn: { notIn: data.variants.map((val) => val.isbn) },
+            },
+          });
+          let d_ref_cDel = service.document_ref_category.deleteMany({
+            where: {
+              document_id,
+              category_id: { notIn: data.categories.map((val) => val) },
+            },
+          });
+          let a = await Promise.all([...d_ref_c, ...vrs, vrsDel, d_ref_cDel]);
           return {
             status: 'success',
-            message: `document with id is ${document_id} is created`,
+            message: `document with id is ${document_id} is updated`,
           };
         },
       );
@@ -269,120 +412,14 @@ export class DocumentService {
       throw error;
     }
   }
-  // async CreateDocument({
-  //   author_id,
-  //   category_id,
-  //   document_name,
-  //   file,
-  //   major_id,
-  //   published_year,
-  //   publisher_id,
-  //   quantity,
-  //   description,
-  // }: CreateDocumentFullDTO) {
-  //   try {
-  //     await Promise.all([
-  //       this.validationService.IsCategoryIdExist(category_id),
-  //       this.validationService.IsMajorIdExist(major_id),
-  //       this.validationService.IsPublisherIdExist(publisher_id),
-  //       this.validationService.IsAuthorIdExist(author_id),
-  //     ]);
-  //   } catch (e) {
-  //     throw new NotFoundException();
-  //   }
-  //   let image: string;
-  //   if (file != undefined) {
-  //     //TODO Upload Image
-  //   }
-  //   let { id_document } = await this.prismaService.document.create({
-  //     data: {
-  //       document_name,
-  //       quantity,
-  //       description,
-  //       published_year,
-  //       id_author: author_id,
-  //       id_category: category_id,
-  //       id_publisher: publisher_id,
-  //       id_major: major_id,
-  //     },
-  //     select: {
-  //       id_document: true,
-  //     },
-  //   });
-
-  //   return {
-  //     status: 'success',
-  //     document_id: id_document,
-  //   };
-  // }
-  // async UpdateDocument({
-  //   author_id,
-  //   category_id,
-  //   document_name,
-  //   file,
-  //   major_id,
-  //   published_year,
-  //   publisher_id,
-  //   quantity,
-  //   description,
-  //   document_id,
-  // }: UpdateDocumentFullDTO) {
-  //   try {
-  //     await Promise.all([
-  //       this.validationService.IsCategoryIdExist(category_id),
-  //       this.validationService.IsMajorIdExist(major_id),
-  //       this.validationService.IsPublisherIdExist(publisher_id),
-  //       this.validationService.IsAuthorIdExist(author_id),
-  //       this.prismaService.document.findUniqueOrThrow({
-  //         where: {
-  //           id_document: document_id,
-  //         },
-  //       }),
-  //     ]);
-  //   } catch (e) {
-  //     throw new NotFoundException();
-  //   }
-  //   let image: string;
-  //   if (file != undefined) {
-  //     //TODO Upload Image
-  //   }
-  //   let { id_document } = await this.prismaService.document.update({
-  //     where: {
-  //       id_document: document_id,
-  //     },
-  //     data: {
-  //       document_name,
-  //       quantity,
-  //       description,
-  //       published_year,
-  //       id_author: author_id,
-  //       id_category: category_id,
-  //       id_publisher: publisher_id,
-  //       id_major: major_id,
-  //     },
-  //     select: {
-  //       id_document: true,
-  //     },
-  //   });
-
-  //   return {
-  //     status: 'success',
-  //     document_id: id_document,
-  //   };
-  // }
-  // async GetDocument(document_id: number) {
-  //   let document = await this.prismaService.document.findUnique({
-  //     where: {
-  //       id_document: document_id,
-  //     },
-  //     include: {
-  //       author: true,
-  //       category: true,
-  //       major: true,
-  //       publisher: true,
-  //     },
-  //   });
-  //   if (!document) throw new NotFoundException();
-  //   return document;
-  // }
+  async DeleteDocument(id: number[]) {
+    await this.prismaService.document.deleteMany({
+      where: {
+        document_id: {
+          in: id,
+        },
+      },
+    });
+    return { message: 'delete successfully', status: 'success' };
+  }
 }

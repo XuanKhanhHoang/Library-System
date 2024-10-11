@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Delete,
   FileTypeValidator,
   Get,
   HttpCode,
@@ -10,6 +12,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -25,9 +28,10 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { RoleGuard } from 'src/auth/guards/role.guard';
-import { UpdateDocumentDTO } from './dto/updateDocument.dto';
 import { RequiredRoles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/roles.enum';
+import { RequestObject } from 'src/auth/dto/request.dto';
+import { UpdateDocumentDTO } from './dto/updateDocumentAndVariant.dto';
 
 @Controller('document')
 @UseGuards(AuthGuard, RoleGuard)
@@ -48,12 +52,18 @@ export class DocumentController {
   async GetVariants(@Query('isbn') isbn: string) {
     return this.documentService.GetVariant(isbn);
   }
+  // @Public()
+  // @Get('get_variants_by_document_id')
+  // async GetVariantsByDocumentId(@Query('id') : number) {
+  //   return this.documentService.GetVariantsByDocumentId();
+  // }
   @RequiredRoles(Role.Manager)
   @Post('create_document')
   @UseInterceptors(FileInterceptor('image'))
   @HttpCode(201)
   async CreateDocument(
     @Body() data: CreateDocumentDTO,
+    @Req() req: RequestObject,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -65,7 +75,8 @@ export class DocumentController {
     )
     file?: Express.Multer.File,
   ) {
-    return this.documentService.CreateDocument(data, file);
+    const { user } = req;
+    return this.documentService.CreateDocument(user.id_user, data, file);
   }
   @RequiredRoles(Role.Manager)
   @Post('create_variant')
@@ -73,6 +84,7 @@ export class DocumentController {
   @HttpCode(201)
   async CreateVariant(
     @Body() data: CreateVariantDTO,
+    @Req() req: RequestObject,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -84,26 +96,40 @@ export class DocumentController {
     )
     file?: Express.Multer.File,
   ) {
-    return this.documentService.CreateVariant(data, file);
+    const { user } = req;
+    return this.documentService.CreateVariant(data, user.id_user, file);
   }
-  // @RequiredRoles(Role.Manager)
-  // @Put('manager/update_document')
-  // @UseInterceptors(FileInterceptor('image'))
-  // @HttpCode(200)
-  // async UpdateDocument(
-  //   @UploadedFile(
-  //     new ParseFilePipe({
-  //       validators: [
-  //         new MaxFileSizeValidator({ maxSize: 3000 }),
-  //         new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
-  //       ],
-  //       fileIsRequired: false,
-  //     }),
-  //   )
-  //   file: Express.Multer.File,
-  //   @Body() data: UpdateDocumentDTO,
-  // ) {
-  //   return this.documentService.UpdateDocument({ ...data, file });
-  // }
+  @RequiredRoles(Role.Manager)
+  @Put('update_document')
+  @UseInterceptors(FileInterceptor('image'))
+  @HttpCode(200)
+  async UpdateDocument(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 3000 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file: Express.Multer.File,
+    @Body() data: UpdateDocumentDTO,
+  ) {
+    return this.documentService.UpdateDocument(data, file);
+  }
+  @RequiredRoles(Role.Manager)
+  @Delete('delete_documents')
+  @HttpCode(204)
+  async DeleteDocuments(@Query() query) {
+    const value = query.id;
+    const id = Array.isArray(value)
+      ? value.map((item) => parseInt(item, 10)).filter((item) => !isNaN(item))
+      : isNaN(parseInt(value, 10))
+        ? undefined
+        : [parseInt(value, 10)];
+    if (!id) throw new BadRequestException();
+    return this.documentService.DeleteDocument(id);
+  }
   //TODO Delete Document
 }

@@ -77,6 +77,8 @@ export class UserController {
   @UseInterceptors(FileInterceptor('avatar'))
   @HttpCode(200)
   UpdateReaderManager(
+    @Body() body: UpdateUserDTO,
+    @Request() req: RequestObject,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -86,21 +88,34 @@ export class UserController {
         fileIsRequired: false,
       }),
     )
-    file: Express.Multer.File,
-    @Body() body: UpdateUserDTO,
-    @Request() req: RequestObject,
+    file?: Express.Multer.File,
   ) {
     let { id_user, is_librian } = req.user;
     if (id_user != body.id_user && !is_librian) throw new ForbiddenException();
     return this.userService.UpdateUser(file, body);
   }
 
-  // @RequiredRoles(Role.Manager)
-  // @Delete('manager/delete_permanent_reader')
-  // DeletePermanentReader(
-  //   @Request() req: RequestObject,
-  //   @Query('reader_id', ParseIntPipe) readerId,
-  // ) {
-  //   this.ReaderService.DeletePermanentReader(readerId);
-  // }
+  @RequiredRoles(Role.Manager)
+  @Put('disable_user')
+  @HttpCode(204)
+  async DisableUser(@Query() query) {
+    const value = query.id;
+    const id = Array.isArray(value)
+      ? value.map((item) => parseInt(item, 10)).filter((item) => !isNaN(item))
+      : isNaN(parseInt(value, 10))
+        ? undefined
+        : [parseInt(value, 10)];
+    if (!id) throw new BadRequestException();
+    return this.userService.DisableUser(id);
+  }
+  @RequiredRoles(Role.Manager)
+  @Delete('delete_user')
+  @HttpCode(204)
+  async DeleteUser(@Query() query) {
+    const value = query.id;
+    const id = Number(value);
+    if (!value || (value && !value.id && isNaN(id)))
+      throw new BadRequestException();
+    return this.userService.DeleteUser(id);
+  }
 }

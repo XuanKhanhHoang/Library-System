@@ -31,7 +31,6 @@ export class UserService {
     phone_number,
     user_id,
   }: GetUserListDTO) {
-    console.log('gd ', gender);
     if (
       (sortByCol != undefined &&
         !this.validationService.IsColumnExist('user', sortByCol)) ||
@@ -157,6 +156,13 @@ export class UserService {
     if (file != undefined) {
       //TODO: Upload Avatar
     }
+    if (data.pass_word != undefined) {
+      let pwd = await bcrypt.hash(
+        data.pass_word,
+        Number(process.env.HASH_ROUND),
+      );
+      data.pass_word = pwd;
+    }
     await this.prismaService.user.update({
       where: {
         id_user: data.id_user,
@@ -228,12 +234,26 @@ export class UserService {
       message: 'create success for user_id ' + id_user,
     };
   }
-  async DeletePermanentReader(readerId: number) {
-    return { status: 'developing' };
-    // this.prismaService.reader.delete({
-    //   where:{
-    //     id_reader:readerId,
-    //   },
-    // })
+  async DisableUser(id: number[]) {
+    await this.prismaService.user.updateMany({
+      where: {
+        id_user: {
+          in: id,
+        },
+      },
+      data: {
+        is_valid: false,
+      },
+    });
+    return { message: 'successfull', status: 'success' };
+  }
+  async DeleteUser(readerId: number) {
+    await this.prismaService.user.delete({
+      where: {
+        id_user: readerId,
+        is_librian: false,
+      },
+    });
+    return { message: 'delete successfully', status: 'success' };
   }
 }
