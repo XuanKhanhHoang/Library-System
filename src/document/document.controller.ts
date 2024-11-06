@@ -14,6 +14,7 @@ import {
   Query,
   Req,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,7 +25,7 @@ import {
   CreateDocumentDTO,
   CreateVariantDTO,
 } from './dto/createDocumentAndVariant.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { RoleGuard } from 'src/auth/guards/role.guard';
@@ -52,19 +53,20 @@ export class DocumentController {
   async GetVariants(@Query('isbn') isbn: string) {
     return this.documentService.GetVariant(isbn);
   }
-  // @Public()
-  // @Get('get_variants_by_document_id')
-  // async GetVariantsByDocumentId(@Query('id') : number) {
-  //   return this.documentService.GetVariantsByDocumentId();
-  // }
+
+  @Public()
+  @Get('get_number_document_of_category')
+  async GetVariantsByDocumentId() {
+    return this.documentService.GetNumberDocumentOfCategory();
+  }
   @RequiredRoles(Role.Manager)
   @Post('create_document')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FilesInterceptor('images'))
   @HttpCode(201)
   async CreateDocument(
     @Body() data: CreateDocumentDTO,
     @Req() req: RequestObject,
-    @UploadedFile(
+    @UploadedFiles(
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 3000 }),
@@ -73,14 +75,32 @@ export class DocumentController {
         fileIsRequired: false,
       }),
     )
-    file?: Express.Multer.File,
+    files?: Express.Multer.File[],
   ) {
     const { user } = req;
-    return this.documentService.CreateDocument(user.id_user, data, file);
+    const documentResult = await this.documentService.CreateDocument(
+      user.id_user,
+      data,
+    );
+    if (documentResult.status === 'success') {
+      const imgStatus = await this.documentService.UploadImages(
+        documentResult.document_id,
+        files,
+      );
+      if (imgStatus.status == 'success')
+        return {
+          status: 'success',
+          message: `Images uploaded and created successfully for document ID ${documentResult.document_id}`,
+        };
+      else
+        return {
+          status: 'success',
+          message: `Document with ID ${documentResult.document_id} is created but failed to upload some image`,
+        };
+    }
   }
   @RequiredRoles(Role.Manager)
   @Post('create_variant')
-  @UseInterceptors(FileInterceptor('image'))
   @HttpCode(201)
   async CreateVariant(
     @Body() data: CreateVariantDTO,
@@ -101,10 +121,11 @@ export class DocumentController {
   }
   @RequiredRoles(Role.Manager)
   @Put('update_document')
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FilesInterceptor('images'))
   @HttpCode(200)
   async UpdateDocument(
-    @UploadedFile(
+    @Body() data: UpdateDocumentDTO,
+    @UploadedFiles(
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 3000 }),
@@ -113,10 +134,25 @@ export class DocumentController {
         fileIsRequired: false,
       }),
     )
-    file: Express.Multer.File,
-    @Body() data: UpdateDocumentDTO,
+    files?: Express.Multer.File[],
   ) {
-    return this.documentService.UpdateDocument(data, file);
+    const documentResult = await this.documentService.UpdateDocument(data);
+    if (documentResult.status === 'success') {
+      const imgStatus = await this.documentService.UploadImages(
+        data.document_id,
+        files,
+      );
+      if (imgStatus.status == 'success')
+        return {
+          status: 'success',
+          message: `Images uploaded and update successfully for document ID ${data.document_id}`,
+        };
+      else
+        return {
+          status: 'success',
+          message: `Document with ID ${data.document_id} is update but failed to upload some images`,
+        };
+    }
   }
   @RequiredRoles(Role.Manager)
   @Delete('delete_documents')

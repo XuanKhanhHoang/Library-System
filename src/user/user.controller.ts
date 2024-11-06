@@ -30,16 +30,20 @@ import { UpdateUserDTO } from './dto/updateUser.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RoleGuard } from 'src/auth/guards/role.guard';
 import { CreateUserDTO } from './dto/createUser.dto';
+import { GoogleDriveService } from 'src/google_drive/google_drive.service';
 
 @UseGuards(AuthGuard, RoleGuard)
 @Controller('user')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private ggDriveService: GoogleDriveService,
+  ) {}
 
   @Post('manager/create_user')
   @RequiredRoles(Role.Manager)
   @UseInterceptors(FileInterceptor('avatar'))
-  CreateUser(
+  async CreateUser(
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -52,16 +56,31 @@ export class UserController {
     file: Express.Multer.File,
     @Body() body: CreateUserDTO,
   ) {
-    return this.userService.CreateUser(file, body);
+    const res = await this.userService.CreateUser(body);
+    if (res.status == 'success') {
+      const upRes = await this.userService.UploadAvatar(file, res.id_user);
+      if (upRes != null)
+        return {
+          status: 'success',
+          message: 'user created successfully and avatar updated',
+        };
+      return {
+        status: 'not-complete success',
+        message: "user created successfully and avatar isn't updated",
+      };
+    }
   }
 
   @Get('manager/get_users')
   @RequiredRoles(Role.Manager)
   GetUserList(@Query() query: GetUserListDTO) {
-    console.log(query);
     return this.userService.GetUserList(query);
   }
-
+  @Get('get_number_user_of_type')
+  @RequiredRoles(Role.Manager)
+  GetNumberUserOfType() {
+    return this.userService.GetNumberUserOfType();
+  }
   @RequiredRoles(Role.User)
   @Get('get_user')
   GetReaderManager(
@@ -76,7 +95,7 @@ export class UserController {
   @Put('update_user')
   @UseInterceptors(FileInterceptor('avatar'))
   @HttpCode(200)
-  UpdateReaderManager(
+  async UpdateReaderManager(
     @Body() body: UpdateUserDTO,
     @Request() req: RequestObject,
     @UploadedFile(
@@ -92,7 +111,24 @@ export class UserController {
   ) {
     let { id_user, is_librian } = req.user;
     if (id_user != body.id_user && !is_librian) throw new ForbiddenException();
-    return this.userService.UpdateUser(file, body);
+    const res = await this.userService.UpdateUser(body);
+    if (!file)
+      return {
+        status: 'success',
+        message: 'user updated successfully',
+      };
+    if (res.status == 'success') {
+      const upRes = await this.userService.UploadAvatar(file, res.id_user);
+      if (upRes != null)
+        return {
+          status: 'success',
+          message: 'user updated successfully and avatar updated',
+        };
+      return {
+        status: 'not-complete success',
+        message: "user updated successfully and avatar isn't updated",
+      };
+    }
   }
 
   @RequiredRoles(Role.Manager)

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -17,6 +18,7 @@ import { Role } from 'src/auth/roles.enum';
 import { RequestObject } from 'src/auth/dto/request.dto';
 import { CreateLoan } from './dtos/CreateLoan.dto';
 import { CreateReturn } from './dtos/CreateReturn.dto';
+import { GetNumberOfLoanTransactionDayByDayDTO } from './dtos/GetNumberOfLoanTransactionDayByDay.dto';
 @Controller('loan-return-transaction')
 @UseGuards(AuthGuard, RoleGuard)
 export class LoanReturnTransactionController {
@@ -30,6 +32,14 @@ export class LoanReturnTransactionController {
   @RequiredRoles(Role.Manager)
   async GetItem(@Query('id', new ParseIntPipe()) id: number) {
     return this.service.GetItem(id);
+  }
+  @Get('get_number_of_loan_transaction_day_by_day')
+  @RequiredRoles(Role.Manager)
+  async GetNumberOfLoanTransactionDayByDay(
+    @Query() data: GetNumberOfLoanTransactionDayByDayDTO,
+  ) {
+    if (data.max_date < data.min_date) throw new BadRequestException();
+    return this.service.GetNumberOfLoanTransactionDayByDay(data);
   }
   @Post('create_item')
   @RequiredRoles(Role.Manager)

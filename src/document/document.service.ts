@@ -12,14 +12,14 @@ import {
   CreateVariantDTO,
 } from './dto/createDocumentAndVariant.dto';
 import { UpdateDocumentDTO } from './dto/updateDocumentAndVariant.dto';
-import { Prisma } from '@prisma/client';
-import { Config } from 'aws-sdk';
+import { GoogleDriveService } from 'src/google_drive/google_drive.service';
 
 @Injectable()
 export class DocumentService {
   constructor(
     private prismaService: PrismaService,
     private validationService: ValidationService,
+    private ggDriveService: GoogleDriveService,
   ) {}
   async GetDocuments({
     category_ids,
@@ -139,6 +139,9 @@ export class DocumentService {
             category: true,
           },
         },
+        image: {
+          take: 1,
+        },
       },
       orderBy: sort_by_col
         ? {
@@ -147,7 +150,10 @@ export class DocumentService {
         : undefined,
     });
     return {
-      data: documents,
+      data: documents.map((item) => ({
+        ...item,
+        image: item?.image[0]?.image,
+      })),
       total_page: Math.ceil(count / document_per_page),
     };
   }
@@ -165,6 +171,7 @@ export class DocumentService {
           },
         },
         variants: true,
+        image: true,
       },
     });
     if (!dc) throw new NotFoundException();
@@ -175,30 +182,25 @@ export class DocumentService {
       where: {
         isbn: isbn,
       },
-      include: {
-        image: true,
-      },
     });
     if (!v) throw new NotFoundException();
     return v;
   }
-  async CreateDocument(
-    id_user: number,
-    data: CreateDocumentDTO,
-    image?: Express.Multer.File,
-  ) {
+  async CreateDocument(id_user: number, data: CreateDocumentDTO) {
     try {
       return await this.prismaService.$transaction(
         async (service: PrismaService) => {
-          let check = data.categories.map((val) => {
+          // Validate categories
+          const check = data.categories.map((val) => {
             return this.validationService.IsCategoryIdExist(val).then((res) => {
               if (!res) throw new NotFoundException();
               return res;
             });
           });
-          await Promise.all(check); ///not enough check
+          await Promise.all(check);
 
-          let [document_id, purchase_id] = await Promise.all([
+          // Create document and purchase records
+          const [document_id, purchase_id] = await Promise.all([
             service.document
               .create({
                 data: {
@@ -207,9 +209,7 @@ export class DocumentService {
                   id_author: data.author_id,
                   id_publisher: data.publisher_id,
                 },
-                select: {
-                  document_id: true,
-                },
+                select: { document_id: true },
               })
               .then((res) => res.document_id),
             service.document_purchase
@@ -219,34 +219,31 @@ export class DocumentService {
                   purchase_date: data.purchase_date,
                   id_librarian: id_user,
                 },
-                select: {
-                  id_purchase: true,
-                },
+                select: { id_purchase: true },
               })
               .then((res) => res.id_purchase),
           ]);
 
-          let d_ref_c = data.categories.map((val) => ({
+          // Prepare data for related tables
+          const d_ref_c = data.categories.map((val) => ({
             document_id,
             category_id: val,
           }));
-          let vrs = data.variants.map((val) => ({
+          const vrs = data.variants.map((val) => ({
             isbn: val.isbn,
             document_id: document_id,
             quantity: val.quantity,
             published_date: val.published_date,
             name: val.name,
           }));
-          let [, purchaseItems] = await Promise.all([
-            service.document_ref_category.createMany({
-              data: d_ref_c,
-            }),
+
+          // Create related records
+          const [, purchaseItems] = await Promise.all([
+            service.document_ref_category.createMany({ data: d_ref_c }),
             service.document_variant
               .createManyAndReturn({
                 data: vrs,
-                select: {
-                  isbn: true,
-                },
+                select: { isbn: true },
               })
               .then((res) =>
                 res.map((item) => ({
@@ -258,12 +255,16 @@ export class DocumentService {
                 })),
               ),
           ]);
+
+          // Create purchase list
           await service.document_puchase_list.createMany({
             data: purchaseItems,
           });
+
           return {
             status: 'success',
-            message: `document with id is ${document_id} is created`,
+            message: `Document with ID ${document_id} is created`,
+            document_id,
           };
         },
       );
@@ -271,6 +272,46 @@ export class DocumentService {
       throw error;
     }
   }
+  async UploadImages(document_id: number, images?: Express.Multer.File[]) {
+    try {
+      const uploadImage = images.map((item, index) => {
+        return this.ggDriveService
+          .uploadFile(item, document_id + 'n' + index)
+          .catch((error) => {
+            console.error(
+              `Failed to upload image: ${item.originalname}`,
+              error,
+            );
+            return null; // Return null for failed uploads
+          });
+      });
+
+      const imagesLink = await Promise.all(uploadImage);
+      const validImagesLink = imagesLink.filter((link) => link !== null);
+
+      const saveImagesLink = validImagesLink.map((item) => ({
+        doc_id: document_id,
+        image: item,
+      }));
+
+      await this.prismaService.$transaction(async (service: PrismaService) => {
+        service.document_image.deleteMany({
+          where: {
+            doc_id: document_id,
+          },
+        });
+        await service.document_image.createMany({ data: saveImagesLink });
+      });
+
+      return {
+        status: 'success',
+        message: `Images uploaded successfully for document ID ${document_id}`,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async CreateVariant(
     data: CreateVariantDTO,
     id_user: number,
@@ -422,4 +463,20 @@ export class DocumentService {
     });
     return { message: 'delete successfully', status: 'success' };
   }
+  async GetNumberDocumentOfCategory() {
+    let sql = `select count(document_id)  AS doc_count,category_id,c.category_name from document_ref_category crf join categories c on crf.category_id=c.id_category group by category_id ,category_name `;
+    let results = (await this.prismaService.$queryRawUnsafe(sql)) as {
+      doc_count: BigInt;
+      category_id: number;
+      category_name: string;
+    }[];
+
+    let serializedResults = results.map((row) => ({
+      ...row,
+      doc_count: Number(row.doc_count),
+    }));
+    return serializedResults;
+  }
 }
+
+('from category ');

@@ -32,11 +32,15 @@ export class CreateDocumentDTO {
   description?: string;
   @IsNotEmpty()
   @IsArray()
+  @Transform(({ value }) => {
+    return JSON.parse(value);
+  })
   variants: CreateVariant[];
 
   @IsNotEmpty()
   @IsArray()
-  @Transform(({ value }) => {
+  @Transform(({ value: valueO }) => {
+    let value = JSON.parse(valueO);
     return Array.isArray(value)
       ? value.map((item) => parseInt(item, 10)).filter((item) => !isNaN(item))
       : isNaN(parseInt(value, 10))

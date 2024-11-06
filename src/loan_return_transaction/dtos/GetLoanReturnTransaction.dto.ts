@@ -44,7 +44,7 @@ export class GetLoanReturnTransactions extends ListCanBeSortDTO {
   @IsDate()
   @Transform(({ value }) => {
     let a = new Date(decodeURIComponent(value));
-    a.setHours(0, 0, 0);
+    a.setHours(23, 59, 59);
     return a;
   })
   max_date?: Date;

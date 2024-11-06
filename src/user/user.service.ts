@@ -11,12 +11,14 @@ import { ValidationService } from 'src/share/validation/validation.service';
 import { GetUserListDTO } from './dto/getUserList.dto';
 import { CreateUserDTO } from './dto/createUser.dto';
 import * as bcrypt from 'bcrypt';
+import { GoogleDriveService } from 'src/google_drive/google_drive.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private prismaService: PrismaService,
     private validationService: ValidationService,
+    private ggDriveService: GoogleDriveService,
   ) {}
 
   async GetUserList({
@@ -121,7 +123,7 @@ export class UserService {
     if (!reader) throw new NotFoundException();
     return reader;
   }
-  async UpdateUser(file: Express.Multer.File, data: UpdateUserDTO) {
+  async UpdateUser(data: UpdateUserDTO) {
     let user = await this.prismaService.user.findUnique({
       where: {
         id_user: data.id_user,
@@ -152,10 +154,6 @@ export class UserService {
     if (!valid[0] && !valid[1])
       throw new BadRequestException('id_major or job_title invalid');
 
-    let avatar: string;
-    if (file != undefined) {
-      //TODO: Upload Avatar
-    }
     if (data.pass_word != undefined) {
       let pwd = await bcrypt.hash(
         data.pass_word,
@@ -169,15 +167,15 @@ export class UserService {
       },
       data: {
         ...data,
-        avatar: file != undefined ? avatar : undefined,
       },
     });
     return {
       status: 'success',
       message: 'update success for reader_id ' + data.id_user,
+      id_user: data.id_user,
     };
   }
-  async CreateUser(file: Express.Multer.File, data: CreateUserDTO) {
+  async CreateUser(data: CreateUserDTO) {
     let user = await this.prismaService.user.findFirst({
       where: {
         OR: [
@@ -215,15 +213,12 @@ export class UserService {
       throw new BadRequestException('id_major or id_job_title invalid');
     let pwd = await bcrypt.hash(data.pass_word, Number(process.env.HASH_ROUND));
     let avatar: string;
-    if (file != undefined) {
-      //TODO: Upload Avatar
-    }
 
     let { id_user } = await this.prismaService.user.create({
       data: {
         ...data,
         pass_word: pwd,
-        avatar: file != undefined ? avatar : undefined,
+        avatar: avatar,
       },
       select: {
         id_user: true,
@@ -232,6 +227,7 @@ export class UserService {
     return {
       status: 'success',
       message: 'create success for user_id ' + id_user,
+      id_user,
     };
   }
   async DisableUser(id: number[]) {
@@ -255,5 +251,35 @@ export class UserService {
       },
     });
     return { message: 'delete successfully', status: 'success' };
+  }
+  async GetNumberUserOfType() {
+    let sql = `select count(*) as quantity,job_title_name from( select id_job_title from users where is_valid = true )u join jobs_titles jt ON u.id_job_title =jt.id_job_title group  by job_title_name `;
+    let results = (await this.prismaService.$queryRawUnsafe(sql)) as {
+      quantity: BigInt;
+      job_title_name: string;
+    }[];
+
+    let serializedResults = results.map((row) => ({
+      ...row,
+      quantity: Number(row.quantity),
+    }));
+    return serializedResults;
+  }
+  async UploadAvatar(file: Express.Multer.File, user_id: number) {
+    let avatar = await this.ggDriveService
+      .uploadFile(file, user_id + '_avatar')
+      .catch((e) => {
+        return null;
+      });
+    if (!avatar) return null;
+    await this.prismaService.user.update({
+      data: {
+        avatar,
+      },
+      where: {
+        id_user: user_id,
+      },
+    });
+    return 1;
   }
 }

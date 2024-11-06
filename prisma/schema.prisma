@@ -81,7 +81,6 @@ model document_variant {
     document              document                @relation(onDelete: Cascade, fields: [document_id], references: [document_id])
     document_puchase_list document_puchase_list[]
     loan_list_document    loan_list_document[]
-    image                 document_image[]
 
     @@map("document_variants")
 }
@@ -98,6 +97,7 @@ model document {
     document_ref_category      document_ref_category[]
     loan_request_list_document loan_request_list_document[]
     marked                     marked_document[]
+    image                      document_image[]
 
     @@map("documents")
 }
@@ -221,12 +221,12 @@ model supplier {
 }
 
 model document_image {
-    id      Int              @id @default(autoincrement())
-    isbn    String
-    image   String           @unique
-    variant document_variant @relation(onDelete: Cascade, fields: [isbn], references: [isbn])
+    id       Int      @id @default(autoincrement())
+    doc_id   Int
+    image    String
+    document document @relation(onDelete: Cascade, fields: [doc_id], references: [document_id])
 
-    @@map("docment_images")
+    @@map("document_images")
 }
 
 model punishment {
@@ -237,15 +237,4 @@ model punishment {
     loan_return_transaction loan_return_transaction[]
 
     @@map("punishments")
-}
-
-model media {
-    id        Int    @id @default(autoincrement())
-    name      String
-    file_name String
-    mime_type String
-    size      Int
-    key       String
-
-    @@map("media")
 }

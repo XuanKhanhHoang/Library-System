@@ -27,9 +27,13 @@ export class UpdateDocumentDTO {
   @IsNotEmpty()
   description?: string;
   @IsArray()
+  @Transform(({ value }) => {
+    return JSON.parse(value);
+  })
   variants: UpdateVariantDTO[];
   @IsArray()
-  @Transform(({ value }) => {
+  @Transform(({ value: valueO }) => {
+    let value = JSON.parse(valueO);
     return Array.isArray(value)
       ? value.map((item) => parseInt(item, 10)).filter((item) => !isNaN(item))
       : isNaN(parseInt(value, 10))

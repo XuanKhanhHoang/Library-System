@@ -4,12 +4,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './prisma/prisma.module';
 import { DocumentModule } from './document/document.module';
 import { ShareModule } from './share/share.module';
-import { MediaModule } from './media/media.module';
 import { UserModule } from './user/user.module';
 import { HandleSimpleDataModule } from './handle-simple-data/handle-simple-data.module';
 import { LoanRequestModule } from './loan_request/loan_request.module';
 import { LoanReturnTransactionModule } from './loan_return_transaction/loan_return_transaction.module';
-
+import { GoogleDriveModule } from './google_drive/google_drive.module';
 @Module({
   imports: [
     PrismaModule,
@@ -25,6 +24,7 @@ import { LoanReturnTransactionModule } from './loan_return_transaction/loan_retu
     ShareModule,
     LoanRequestModule,
     LoanReturnTransactionModule,
+    GoogleDriveModule,
   ],
 })
 export class AppModule {}

@@ -331,4 +331,26 @@ export class LoanReturnTransactionService {
       },
     );
   }
+  async GetNumberOfLoanTransactionDayByDay({
+    max_date,
+    min_date,
+  }: {
+    min_date?: Date;
+    max_date?: Date;
+  }) {
+    min_date = min_date || new Date('1/1/2010');
+    max_date = max_date || new Date();
+
+    let sql = `select  sum(quantity) as quantity,create_at from (select id_loan_return,create_at from loan_return_transactions where create_at <= '${max_date.toISOString()}' and create_at >= '${min_date.toISOString()}') lrt  join loan_list_documents lld  on lrt.id_loan_return  =lld.id_loan_return group by create_at `;
+    let results = (await this.prismaService.$queryRawUnsafe(sql)) as {
+      quantity: BigInt;
+      create_at: string;
+    }[];
+
+    let serializedResults = results.map((row) => ({
+      ...row,
+      quantity: Number(row.quantity),
+    }));
+    return serializedResults;
+  }
 }
