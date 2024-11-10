@@ -6,6 +6,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GetLoanRequestList } from './dtos/GetLoanRequestList.dto';
 import { ValidationService } from 'src/share/validation/validation.service';
+import { CreateLoanRequest } from './dtos/CreateLoanRequest.dto';
 
 @Injectable()
 export class LoanRequestService {
@@ -208,5 +209,51 @@ export class LoanRequestService {
     return {
       status: 'success',
     };
+  }
+  async CreateLoanRequest(data: CreateLoanRequest, user_id: number) {
+    try {
+      let checks = data.documents.map((item) => {
+        return this.prismaService.document_variant.findFirstOrThrow({
+          where: {
+            document_id: item.document_id,
+            quantity: {
+              gte: item.quantity,
+            },
+          },
+        });
+      });
+      await Promise.all(checks);
+    } catch (e) {
+      if (e.code == 'P2025')
+        throw new ConflictException(
+          'Insufficient inventory to fulfill the request',
+        );
+    }
+    return await this.prismaService.$transaction(
+      async (service: PrismaService) => {
+        const { id_loan_request } = await service.loan_request.create({
+          data: {
+            create_at: data.create_at,
+            expected_date: data.expected_date,
+            id_reader: user_id,
+          },
+          select: {
+            id_loan_request: true,
+          },
+        });
+        const documents = data.documents.map((item) => ({
+          ...item,
+          id_loan_request,
+        }));
+        await service.loan_request_list_document.createMany({
+          data: documents,
+        });
+        return {
+          status: 'success',
+          id: id_loan_request,
+          message: `loan request with id is${id_loan_request} is created successfully`,
+        };
+      },
+    );
   }
 }

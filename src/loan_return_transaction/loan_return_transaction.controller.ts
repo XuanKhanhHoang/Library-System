@@ -36,7 +36,7 @@ export class LoanReturnTransactionController {
   @Get('get_user_list')
   @RequiredRoles(Role.User)
   async GetUserList(
-    req: RequestObject,
+    @Req() req: RequestObject,
     @Query() query: GetUserLoanReturnTransactions,
   ) {
     const { user } = req;
@@ -47,7 +47,7 @@ export class LoanReturnTransactionController {
   @Get('get_item')
   @RequiredRoles(Role.User)
   async GetItem(
-    req: RequestObject,
+    @Req() req: RequestObject,
     @Query('id', new ParseIntPipe()) id: number,
   ) {
     return this.service.GetItem(id, req.user);

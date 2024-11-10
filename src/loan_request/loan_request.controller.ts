@@ -4,8 +4,10 @@ import {
   Controller,
   Get,
   ParseIntPipe,
+  Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
@@ -19,6 +21,7 @@ import { ListID } from './dtos/ListId.dto';
 import { RequiredRoles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/roles.enum';
 import { RequestObject } from 'src/auth/dto/request.dto';
+import { CreateLoanRequest } from './dtos/CreateLoanRequest.dto';
 
 @Controller('loan-request')
 @UseGuards(AuthGuard, RoleGuard)
@@ -36,7 +39,10 @@ export class LoanRequestController {
   //* RequiredQuery: GetUserLoanRequestList */
   @Get('get_user_list')
   @RequiredRoles(Role.User)
-  GetUserList(@Query() query: GetUserLoanRequestList, req: RequestObject) {
+  GetUserList(
+    @Query() query: GetUserLoanRequestList,
+    @Req() req: RequestObject,
+  ) {
     const { max_date, min_date } = query;
     if (max_date < min_date) throw new BadRequestException();
     return this.service.GetList({ ...query, user_id: req.user.id_user });
@@ -50,7 +56,10 @@ export class LoanRequestController {
   //* RequiredQuery: id */
   @RequiredRoles(Role.Manager)
   @Get('get_user_item')
-  GetUserItem(@Query('id', new ParseIntPipe()) id: number, req: RequestObject) {
+  GetUserItem(
+    @Query('id', new ParseIntPipe()) id: number,
+    @Req() req: RequestObject,
+  ) {
     return this.service.GetItem(id, req.user.id_user);
   }
   @Get('check_request_is_handled')
@@ -70,5 +79,19 @@ export class LoanRequestController {
   Refuse(@Body() body: ListID) {
     if (body.id.length == 0) throw new BadRequestException();
     return this.service.UpdateStatus(body.id, false);
+  }
+  //** Now user is accessible to call this point to create a request  */
+  //* RequiredQuery: CreateLoanRequest */
+  //*! NOTE:
+  //*! Date must be a ENCODE_URI(Date)
+  //*! Documents must be a json stringified format
+  @Post('create_loan_request')
+  @RequiredRoles(Role.User)
+  async CreateLoanRequest(
+    @Body() body: CreateLoanRequest,
+    @Req() req: RequestObject,
+  ) {
+    if (body.expected_date < body.create_at) throw new BadRequestException();
+    return this.service.CreateLoanRequest(body, req.user.id_user);
   }
 }
