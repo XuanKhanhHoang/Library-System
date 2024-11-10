@@ -22,7 +22,6 @@ import { RequestObject } from 'src/auth/dto/request.dto';
 import { CreateLoan } from './dtos/CreateLoan.dto';
 import { CreateReturn } from './dtos/CreateReturn.dto';
 import { GetNumberOfLoanTransactionDayByDayDTO } from './dtos/GetNumberOfLoanTransactionDayByDay.dto';
-import { query } from 'express';
 @Controller('loan-return-transaction')
 @UseGuards(AuthGuard, RoleGuard)
 export class LoanReturnTransactionController {

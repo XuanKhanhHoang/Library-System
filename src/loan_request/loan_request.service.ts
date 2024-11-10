@@ -108,10 +108,11 @@ export class LoanRequestService {
       data: readers,
     };
   }
-  async GetItem(id: number) {
+  async GetItem(id: number, user_id?: number) {
     let a = await this.prismaService.loan_request.findUnique({
       where: {
         id_loan_request: id,
+        id_reader: user_id,
       },
       include: {
         user: {

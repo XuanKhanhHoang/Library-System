@@ -128,7 +128,7 @@ model document_puchase_list {
 model loan_request {
     id_loan_request             Int                          @id @default(autoincrement())
     id_reader                   Int
-    status_id                   Int
+    status_id                   Int                          @default(1)
     create_at                   DateTime                     @default(now())
     expected_date               DateTime                     @default(now())
     transaction_id              Int?                         @unique

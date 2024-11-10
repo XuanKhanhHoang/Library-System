@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { ListCanBeSortDTO } from 'src/share/dto/base.dto';
 
-export class GetLoanRequestList extends ListCanBeSortDTO {
+export class GetUserLoanRequestList extends ListCanBeSortDTO {
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
@@ -39,6 +39,12 @@ export class GetLoanRequestList extends ListCanBeSortDTO {
   @IsNumber()
   @Transform(({ value }) => Number.parseInt(value))
   loan_request_id?: number;
+}
+export class GetLoanRequestList extends GetUserLoanRequestList {
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => Number.parseInt(value))
+  user_id?: number;
   @IsOptional()
   @IsNotEmpty()
   name?: string;
