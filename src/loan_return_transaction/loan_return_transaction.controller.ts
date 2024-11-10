@@ -10,7 +10,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { LoanReturnTransactionService } from './loan_return_transaction.service';
-import { GetLoanReturnTransactions } from './dtos/GetLoanReturnTransaction.dto';
+import {
+  GetLoanReturnTransactions,
+  GetUserLoanReturnTransactions,
+} from './dtos/GetLoanReturnTransaction.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { RoleGuard } from 'src/auth/guards/role.guard';
 import { RequiredRoles } from 'src/auth/decorators/roles.decorator';
@@ -19,6 +22,7 @@ import { RequestObject } from 'src/auth/dto/request.dto';
 import { CreateLoan } from './dtos/CreateLoan.dto';
 import { CreateReturn } from './dtos/CreateReturn.dto';
 import { GetNumberOfLoanTransactionDayByDayDTO } from './dtos/GetNumberOfLoanTransactionDayByDay.dto';
+import { query } from 'express';
 @Controller('loan-return-transaction')
 @UseGuards(AuthGuard, RoleGuard)
 export class LoanReturnTransactionController {
@@ -28,10 +32,26 @@ export class LoanReturnTransactionController {
   async GetList(@Query() query: GetLoanReturnTransactions) {
     return this.service.GetList(query);
   }
+  //** Now user call to here to get loan list belong this user*/
+  //* RequiredQuery: GetUserLoanReturnTransactions */
+  @Get('get_user_list')
+  @RequiredRoles(Role.User)
+  async GetUserList(
+    req: RequestObject,
+    @Query() query: GetUserLoanReturnTransactions,
+  ) {
+    const { user } = req;
+    return this.service.GetList({ ...query, user_id: user.id_user });
+  }
+  //** Now user is accessible to call this point to get an transaction information  */
+  //* RequiredQuery: id */
   @Get('get_item')
-  @RequiredRoles(Role.Manager)
-  async GetItem(@Query('id', new ParseIntPipe()) id: number) {
-    return this.service.GetItem(id);
+  @RequiredRoles(Role.User)
+  async GetItem(
+    req: RequestObject,
+    @Query('id', new ParseIntPipe()) id: number,
+  ) {
+    return this.service.GetItem(id, req.user);
   }
   @Get('get_number_of_loan_transaction_day_by_day')
   @RequiredRoles(Role.Manager)

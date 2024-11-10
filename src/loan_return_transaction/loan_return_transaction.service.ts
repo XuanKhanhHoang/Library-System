@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -168,7 +169,20 @@ export class LoanReturnTransactionService {
       data: readers,
     };
   }
-  async GetItem(id: number) {
+  async GetItem(
+    id: number,
+    user_call: { id_user: number; is_librian: boolean },
+  ) {
+    if (!user_call.is_librian) {
+      const { id_reader } =
+        await this.prismaService.loan_return_transaction.findUnique({
+          where: { id_loan_return: id },
+          select: {
+            id_reader: true,
+          },
+        });
+      if (id != id_reader) throw new ForbiddenException();
+    }
     return this.prismaService.loan_return_transaction.findUnique({
       where: { id_loan_return: id },
       include: {
