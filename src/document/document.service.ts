@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { GetDocumentsDTO } from './dto/getDocumnets.dto';
+import { GetDocumentsDTO, GetPreviewWithIds } from './dto/getDocumnets.dto';
 import { ValidationService } from 'src/share/validation/validation.service';
 import {
   CreateDocumentDTO,
@@ -155,6 +155,29 @@ export class DocumentService {
         image: item?.image[0]?.image,
       })),
       total_page: Math.ceil(count / document_per_page),
+    };
+  }
+  async GetDocumentsWidthIds({ ids }: GetPreviewWithIds) {
+    let documents = await this.prismaService.document.findMany({
+      where: {
+        document_id: {
+          in: ids,
+        },
+      },
+      include: {
+        author: true,
+        image: {
+          take: 1,
+        },
+        publisher: true,
+      },
+    });
+    return {
+      data: documents.map((item) => ({
+        ...item,
+        image: item?.image[0]?.image,
+      })),
+      total: documents.length,
     };
   }
   async GetDocument(did: number) {
@@ -478,5 +501,3 @@ export class DocumentService {
     return serializedResults;
   }
 }
-
-('from category ');

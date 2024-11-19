@@ -28,16 +28,14 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     try {
-      const { id_user, is_librian } = (await this.jwtService.verifyAsync(
-        token,
-        {
-          secret: process.env.JWT_ACCESS_TOKEN_SECRET,
-        },
-      )) as { id_user: number; is_librian: boolean };
+      let { id_user, is_librian } = (await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_ACCESS_TOKEN_SECRET,
+      })) as { id_user: number; is_librian: boolean };
+      if (id_user == undefined || isNaN(Number(id_user))) throw new Error();
       request['user'] = await this.prismaService.user.findFirstOrThrow({
         where: {
-          id_user: id_user,
-          is_librian: is_librian,
+          id_user,
+          is_librian,
           is_valid: true,
         },
         select: {

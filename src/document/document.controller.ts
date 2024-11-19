@@ -20,7 +20,7 @@ import {
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { query } from 'express';
-import { GetDocumentsDTO } from './dto/getDocumnets.dto';
+import { GetDocumentsDTO, GetPreviewWithIds } from './dto/getDocumnets.dto';
 import {
   CreateDocumentDTO,
   CreateVariantDTO,
@@ -42,6 +42,11 @@ export class DocumentController {
   @Get('get_preview_documents')
   async GetPreviewDocument(@Query() query: GetDocumentsDTO) {
     return this.documentService.GetDocuments(query);
+  }
+  @Public()
+  @Get('get_preview_with_ids')
+  async get_preview_with_ids(@Query() query: GetPreviewWithIds) {
+    return this.documentService.GetDocumentsWidthIds(query);
   }
   @Public()
   @Get('get_document')

@@ -54,3 +54,13 @@ export class GetDocumentsDTO extends ListCanBeSortDTO {
   @MaxDate(new Date())
   published_date: number;
 }
+export class GetPreviewWithIds {
+  @Transform(({ value }) => {
+    return Array.isArray(value)
+      ? value.map((item) => parseInt(item, 10)).filter((item) => !isNaN(item))
+      : isNaN(parseInt(value, 10))
+        ? undefined
+        : [parseInt(value, 10)];
+  })
+  ids?: number[];
+}

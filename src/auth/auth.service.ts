@@ -2,19 +2,23 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { LoginDTO, LoginResultDTO } from './dto/auth.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prismaService: PrismaService,
     private jwtService: JwtService,
+    private readonly mailerService: MailerService,
   ) {}
+  private mailer_name = `"UTC LIB SYSTEM " <Khanhpopo056@gmail.com>`;
   async Login(body: LoginDTO, isManager = false): Promise<LoginResultDTO> {
     let { pass_word: userLoginPassword, user_name: userName } = body;
     userName = userName.toLocaleLowerCase();
@@ -81,5 +85,111 @@ export class AuthService {
         exp: now.getTime(),
       },
     };
+  }
+  public async createOTP(otp_type: number, email: string, validTime = 900000) {
+    //900000ms = 15'
+    const min = 100000;
+    const max = 999999;
+    const otp = Math.floor(Math.random() * (max - min + 1)) + min;
+    let currentTime = new Date().getTime();
+    let timezoneOffset = new Date().getTimezoneOffset() * 60000;
+    let invalidTime = new Date(currentTime - timezoneOffset + validTime);
+    const data = await this.prismaService.otp_code_queue.create({
+      data: {
+        code: otp,
+        email: email,
+        otp_code_type: otp_type,
+        invalid_time: invalidTime,
+      },
+      select: {
+        code: true,
+        id: true,
+      },
+    });
+    return data;
+  }
+  async GetOTPtoForgotPassword(email: string) {
+    try {
+      const res = await this.prismaService.user.findFirst({
+        where: {
+          email: email,
+          is_valid: true,
+          is_librian: false,
+        },
+        select: {
+          user_name: true,
+        },
+      });
+      if (!res) throw new NotFoundException('user not found');
+      const otp_code_type_reset_password = 1;
+      const { code: otp } = await this.createOTP(
+        otp_code_type_reset_password,
+        email,
+      );
+      let a = await this.mailerService.sendMail({
+        from: 'this.mailer_name', // sender address
+        to: email, // list of receivers
+        subject: 'Quên mật khẩu cho tài khoản ' + res.user_name, // Subject line
+        text: `Vui lòng nhập OTP là : ${otp}`, // plain text body
+        html: `Mã OTP cho việc quên mật khẩu của bạn là :${otp} ,mã này hết hạn trong 15 phút.`, // html body
+      });
+      console.log(a);
+      return {
+        success: true,
+      };
+    } catch (e) {
+      console.log(e);
+      throw new ServiceUnavailableException();
+    }
+  }
+  async GetForgotPasswordLink(email: string) {
+    const res = await this.prismaService.user.findFirst({
+      where: {
+        email: email,
+        is_valid: true,
+        is_librian: false,
+      },
+      select: {
+        user_name: true,
+        id_user: true,
+      },
+    });
+    if (!res) throw new NotFoundException('user not found');
+    const access_token = await this.jwtService.signAsync({
+      id_user: res.id_user,
+      is_librian: false,
+    });
+    const makeChangePasswordLink = (access_token: string, email: string) =>
+      `http://localhost:3000/auth/reset_password?access_token=${encodeURIComponent(
+        access_token,
+      )}&email=${encodeURI(email)}`;
+    try {
+      await this.mailerService.sendMail({
+        from: this.mailer_name, // sender address
+        to: email, // list of receivers
+        subject: 'Quên mật khẩu cho tài khoản ' + res.user_name, // Subject line
+        text: `Vui lòng click vào link dưới để thay đổi mật khẩu`, // plain text body
+        html: `<a href="${makeChangePasswordLink(access_token, email)}" style="
+      text-decoration: none;
+      padding: 12px;
+      color: WHITE;
+      background-color: #6af86a;
+      text-align: center;
+      margin: 0 auto;
+      width: 40%;
+      display: block;
+      border-radius: 5px;
+      font-size: 0.9rem;
+  ">Click vào đây để thay đổi mật khẩu </a>
+      <div>Link này hết hạn trong 2 giờ.</div>
+  `, // html body
+      });
+      return {
+        success: true,
+      };
+    } catch (e) {
+      console.log(e);
+      throw new ServiceUnavailableException();
+    }
   }
 }

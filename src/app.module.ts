@@ -9,6 +9,8 @@ import { HandleSimpleDataModule } from './handle-simple-data/handle-simple-data.
 import { LoanRequestModule } from './loan_request/loan_request.module';
 import { LoanReturnTransactionModule } from './loan_return_transaction/loan_return_transaction.module';
 import { GoogleDriveModule } from './google_drive/google_drive.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+
 @Module({
   imports: [
     PrismaModule,
@@ -16,6 +18,16 @@ import { GoogleDriveModule } from './google_drive/google_drive.module';
       global: true,
       secret: process.env.JWT_ACCESS_TOKEN_SECRET,
       signOptions: { expiresIn: '1h' },
+    }),
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.APP_MAIL_HOST,
+        port: 587,
+        auth: {
+          user: process.env.APP_MAIL_USERNAME,
+          pass: process.env.APP_MAIL_PWD,
+        },
+      },
     }),
     AuthModule,
     UserModule,

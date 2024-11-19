@@ -181,7 +181,7 @@ export class LoanReturnTransactionService {
             id_reader: true,
           },
         });
-      if (id != id_reader) throw new ForbiddenException();
+      if (user_call.id_user != id_reader) throw new ForbiddenException();
     }
     return this.prismaService.loan_return_transaction.findUnique({
       where: { id_loan_return: id },

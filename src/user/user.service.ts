@@ -282,4 +282,32 @@ export class UserService {
     });
     return 1;
   }
+  async ChangePassword(newPassword: string, user_id: number) {
+    const user = await this.prismaService.user.findFirst({
+      where: {
+        id_user: user_id,
+        is_librian: false,
+        is_valid: true,
+      },
+      select: {
+        id_user: true,
+      },
+    });
+    if (!user) throw new NotFoundException('user not found');
+    let hashedPassword = await bcrypt.hash(
+      newPassword,
+      Number(process.env.HASH_ROUND),
+    );
+    await this.prismaService.user.update({
+      where: {
+        id_user: user_id,
+      },
+      data: {
+        pass_word: hashedPassword,
+      },
+    });
+    return {
+      status: 'success',
+    };
+  }
 }

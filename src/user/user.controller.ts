@@ -14,6 +14,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Request,
   UploadedFile,
   UseGuards,
@@ -153,5 +154,17 @@ export class UserController {
     if (!value || (value && !value.id && isNaN(id)))
       throw new BadRequestException();
     return this.userService.DeleteUser(id);
+  }
+  @Post('change_password')
+  @UseGuards(AuthGuard)
+  @HttpCode(200)
+  async ChangePassword(
+    @Req() req: RequestObject,
+    @Body('new_password') newPassword: string,
+  ) {
+    const { user } = req;
+    if (newPassword.length < 6 || !newPassword)
+      throw new BadRequestException('new password is invalid');
+    return this.userService.ChangePassword(newPassword, user.id_user);
   }
 }

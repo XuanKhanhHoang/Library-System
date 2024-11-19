@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDTO, LoginResultDTO } from './dto/auth.dto';
+import { EmailDTO, LoginDTO, LoginResultDTO } from './dto/auth.dto';
 import { RequestObject } from './dto/request.dto';
 
 @Controller('auth')
@@ -19,5 +19,13 @@ export class AuthController {
   async AuthToken(@Req() req: RequestObject) {
     const { user } = req;
     return this.authService.AuthToken(user);
+  }
+  @Post('get_otp_to_forgot_password')
+  async GetOTPtoForgotPassword(@Body() body: EmailDTO) {
+    return this.authService.GetOTPtoForgotPassword(body.email);
+  }
+  @Post('get_forgot_password_link')
+  async GetForgotPasswordLink(@Body() body: EmailDTO) {
+    return this.authService.GetForgotPasswordLink(body.email);
   }
 }

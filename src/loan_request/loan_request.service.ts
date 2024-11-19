@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  HttpCode,
+  HttpException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -195,17 +197,33 @@ export class LoanRequestService {
     if (a == undefined) throw new NotFoundException();
     return a;
   }
-  async UpdateStatus(id: number[], isAccept: boolean) {
-    await this.prismaService.loan_request.updateMany({
+  async UpdateStatus(
+    id: number[],
+    isAccept: boolean,
+    user: {
+      id_user: number;
+      is_librian: boolean;
+    },
+  ) {
+    let res = await this.prismaService.loan_request.updateMany({
       where: {
         id_loan_request: {
           in: id,
         },
+        id_reader: user.is_librian ? undefined : user.id_user,
       },
       data: {
         status_id: isAccept ? 3 : 2,
       },
     });
+    if (!res) throw new NotFoundException();
+    if (res.count != id.length)
+      return new HttpException(
+        {
+          status: 'partial success',
+        },
+        206,
+      );
     return {
       status: 'success',
     };

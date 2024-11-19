@@ -54,7 +54,7 @@ export class LoanRequestController {
   }
   //** Now user is accessible to call this point to get an transaction information  */
   //* RequiredQuery: id */
-  @RequiredRoles(Role.Manager)
+  @RequiredRoles(Role.User)
   @Get('get_user_item')
   GetUserItem(
     @Query('id', new ParseIntPipe()) id: number,
@@ -71,14 +71,18 @@ export class LoanRequestController {
     return this.service.GetItemIncludeVariants(id);
   }
   @Put('accept')
-  Accept(@Body() body: ListID) {
+  @RequiredRoles(Role.Manager)
+  Accept(@Body() body: ListID, @Req() req: RequestObject) {
+    const { user } = req;
     if (body.id.length == 0) throw new BadRequestException();
-    return this.service.UpdateStatus(body.id, true);
+    return this.service.UpdateStatus(body.id, true, user);
   }
   @Put('refuse')
-  Refuse(@Body() body: ListID) {
+  @RequiredRoles(Role.User)
+  Refuse(@Body() body: ListID, @Req() req: RequestObject) {
+    const { user } = req;
     if (body.id.length == 0) throw new BadRequestException();
-    return this.service.UpdateStatus(body.id, false);
+    return this.service.UpdateStatus(body.id, false, user);
   }
   //** Now user is accessible to call this point to create a request  */
   //* RequiredQuery: CreateLoanRequest */
