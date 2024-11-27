@@ -10,11 +10,6 @@ import { ListCanBeSortDTO } from 'src/share/dto/base.dto';
 
 export class GetUserLoanRequestList extends ListCanBeSortDTO {
   @IsOptional()
-  @IsNumber()
-  @Transform(({ value }) => Number.parseInt(value))
-  user_id?: number;
-
-  @IsOptional()
   @IsDate()
   @Transform(({ value }) => {
     let a = new Date(decodeURIComponent(value));

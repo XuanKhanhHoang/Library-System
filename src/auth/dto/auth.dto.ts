@@ -1,4 +1,15 @@
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { ValidOTP } from '../decorators/validOTP.decorator';
+
+export class OTPAuthForgotPassword {
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @ValidOTP()
+  otp: number;
+}
 
 export class EmailDTO {
   @IsEmail()

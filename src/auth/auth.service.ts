@@ -1,15 +1,21 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { LoginDTO, LoginResultDTO } from './dto/auth.dto';
+import {
+  LoginDTO,
+  LoginResultDTO,
+  OTPAuthForgotPassword,
+} from './dto/auth.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { MailerService } from '@nestjs-modules/mailer';
+import { Role } from './roles.enum';
 
 @Injectable()
 export class AuthService {
@@ -133,12 +139,12 @@ export class AuthService {
         text: `Vui lòng nhập OTP là : ${otp}`, // plain text body
         html: `Mã OTP cho việc quên mật khẩu của bạn là :${otp} ,mã này hết hạn trong 15 phút.`, // html body
       });
-      console.log(a);
       return {
         success: true,
       };
     } catch (e) {
       console.log(e);
+      if (e.status == 404) throw e;
       throw new ServiceUnavailableException();
     }
   }
@@ -189,7 +195,53 @@ export class AuthService {
       };
     } catch (e) {
       console.log(e);
+      if (e.status == 404) throw e;
       throw new ServiceUnavailableException();
     }
+  }
+  async AuthForgotPasswordOTP(data: OTPAuthForgotPassword) {
+    const otp_code = Number(data.otp);
+    const { email } = data;
+    const res = await this.prismaService.otp_code_queue.findFirst({
+      where: {
+        code: otp_code,
+        email: email,
+      },
+    });
+    if (!res) {
+      throw new NotFoundException('OTP not found');
+    }
+    if (!res.is_valid) {
+      throw new BadRequestException('OTP has been authenticated');
+    }
+    let currentTime = new Date().getTime();
+    let timezoneOffset = new Date().getTimezoneOffset() * 60000;
+    let localCurrentTime = new Date(currentTime - timezoneOffset);
+    if (res.invalid_time.getTime() < localCurrentTime.getTime()) {
+      throw new BadRequestException('OPT expired');
+    }
+    await this.prismaService.otp_code_queue.update({
+      where: {
+        id: res.id,
+      },
+      data: {
+        is_valid: false,
+      },
+    });
+    const { id_user } = await this.prismaService.user.findFirst({
+      where: {
+        email: email,
+      },
+      select: {
+        id_user: true,
+      },
+    });
+    let access_token = await this.jwtService.signAsync({
+      id_user,
+      role: Role.User,
+    });
+    return {
+      access_token: access_token,
+    };
   }
 }

@@ -36,10 +36,7 @@ import { GoogleDriveService } from 'src/google_drive/google_drive.service';
 @UseGuards(AuthGuard, RoleGuard)
 @Controller('user')
 export class UserController {
-  constructor(
-    private userService: UserService,
-    private ggDriveService: GoogleDriveService,
-  ) {}
+  constructor(private userService: UserService) {}
 
   @Post('manager/create_user')
   @RequiredRoles(Role.Manager)
@@ -71,7 +68,33 @@ export class UserController {
       };
     }
   }
-
+  @Get('get_marked_documents')
+  @RequiredRoles(Role.User)
+  async GetMarkedDocuments(@Req() req: RequestObject) {
+    return this.userService.GetMarkedDocuments(req.user.id_user);
+  }
+  @Get('get_marked_documents_id')
+  @RequiredRoles(Role.User)
+  async GetMarkedDocumentIds(@Req() req: RequestObject) {
+    return this.userService.GetMarkedDocuments(req.user.id_user, true);
+  }
+  @Post('add_marked_document')
+  @RequiredRoles(Role.User)
+  async AddMarkedDocument(
+    @Req() req: RequestObject,
+    @Body('doc_id', new ParseIntPipe()) doc_id: number,
+  ) {
+    return this.userService.AddMarkedDocument(req.user.id_user, doc_id);
+  }
+  @Delete('remove_marked_document')
+  @RequiredRoles(Role.User)
+  @HttpCode(204)
+  async RemoveMarkedDocument(
+    @Req() req: RequestObject,
+    @Body('doc_id', new ParseIntPipe()) doc_id: number,
+  ) {
+    return this.userService.RemoveMarkedDocument(req.user.id_user, doc_id);
+  }
   @Get('manager/get_users')
   @RequiredRoles(Role.Manager)
   GetUserList(@Query() query: GetUserListDTO) {

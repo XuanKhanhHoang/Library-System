@@ -310,4 +310,63 @@ export class UserService {
       status: 'success',
     };
   }
+  async GetMarkedDocuments(id_user: number, justId = false) {
+    return this.prismaService.marked_document.findMany({
+      where: {
+        id_reader: id_user,
+      },
+      select: justId
+        ? { document_id: true }
+        : {
+            document: {
+              select: {
+                document_name: true,
+                document_id: true,
+                image: true,
+                author: true,
+                description: true,
+                publisher: true,
+              },
+            },
+          },
+    });
+  }
+  async RemoveMarkedDocument(id_reader: number, document_id: number) {
+    const res = await this.prismaService.marked_document.findFirst({
+      where: {
+        document_id,
+        id_reader,
+      },
+      select: {
+        id: true,
+      },
+    });
+    if ((!res || !res.id) == undefined) throw new NotFoundException();
+    await this.prismaService.marked_document.delete({
+      where: {
+        id: res.id,
+      },
+    });
+    return;
+  }
+  async AddMarkedDocument(id_reader: number, document_id: number) {
+    if (
+      (await this.prismaService.marked_document.findFirst({
+        where: {
+          document_id,
+          id_reader,
+        },
+      })) != undefined
+    )
+      throw new ConflictException();
+    await this.prismaService.marked_document.create({
+      data: {
+        document_id,
+        id_reader,
+      },
+    });
+    return {
+      status: 'success',
+    };
+  }
 }

@@ -42,9 +42,30 @@ export class HandleSimpleDataService {
       },
     });
   }
+  async CreateAuthor(name: string) {
+    return await this.prismaService.author.create({
+      data: {
+        author_name: name,
+      },
+    });
+  }
+  async CreateSupplier(name: string) {
+    return await this.prismaService.supplier.create({
+      data: {
+        supplier_name: name,
+      },
+    });
+  }
   async GetJobTitles() {
     return await this.prismaService.category.findMany({
       where: {},
+    });
+  }
+  async CreatePublisher(name: string) {
+    return await this.prismaService.publisher.create({
+      data: {
+        publisher_name: name,
+      },
     });
   }
   async GetJobTitle(category_id: number) {

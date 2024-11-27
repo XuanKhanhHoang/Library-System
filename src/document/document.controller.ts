@@ -19,7 +19,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
-import { query } from 'express';
 import { GetDocumentsDTO, GetPreviewWithIds } from './dto/getDocumnets.dto';
 import {
   CreateDocumentDTO,
@@ -172,5 +171,4 @@ export class DocumentController {
     if (!id) throw new BadRequestException();
     return this.documentService.DeleteDocument(id);
   }
-  //TODO Delete Document
 }

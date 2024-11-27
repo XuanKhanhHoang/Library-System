@@ -172,13 +172,10 @@ export class DocumentService {
         publisher: true,
       },
     });
-    return {
-      data: documents.map((item) => ({
-        ...item,
-        image: item?.image[0]?.image,
-      })),
-      total: documents.length,
-    };
+    return documents.map((item) => ({
+      ...item,
+      image: item?.image[0]?.image,
+    }));
   }
   async GetDocument(did: number) {
     let dc = await this.prismaService.document.findUnique({
