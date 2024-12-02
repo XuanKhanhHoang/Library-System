@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDate,
   IsDateString,
+  IsEmail,
   IsNotEmpty,
   IsOptional,
   IsPhoneNumber,
@@ -17,6 +18,8 @@ export class UpdateUserDTO {
   birth_date: Date;
   @IsPhoneNumber('VN')
   phone_number: string;
+  @IsEmail()
+  email: string;
   @IsBoolean()
   @Transform(({ value }) => value != 'false')
   gender: boolean;

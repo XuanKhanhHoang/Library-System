@@ -96,7 +96,6 @@ export class LoanRequestController {
     @Req() req: RequestObject,
   ) {
     if (body.expected_date < body.create_at) throw new BadRequestException();
-    console.log(body);
     return this.service.CreateLoanRequest(body, req.user.id_user);
   }
 }

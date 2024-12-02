@@ -185,6 +185,9 @@ export class UserService {
           {
             phone_number: data.phone_number,
           },
+          {
+            email: data.email,
+          },
         ],
       },
       select: {
@@ -212,13 +215,12 @@ export class UserService {
     if (!(valid[0] && valid[1]))
       throw new BadRequestException('id_major or id_job_title invalid');
     let pwd = await bcrypt.hash(data.pass_word, Number(process.env.HASH_ROUND));
-    let avatar: string;
 
     let { id_user } = await this.prismaService.user.create({
       data: {
         ...data,
         pass_word: pwd,
-        avatar: avatar,
+        avatar: null,
       },
       select: {
         id_user: true,

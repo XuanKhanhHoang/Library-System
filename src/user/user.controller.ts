@@ -45,7 +45,7 @@ export class UserController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 3000 }),
+          new MaxFileSizeValidator({ maxSize: 3000 * 1000 }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
         ],
         fileIsRequired: false,
@@ -91,7 +91,7 @@ export class UserController {
   @HttpCode(204)
   async RemoveMarkedDocument(
     @Req() req: RequestObject,
-    @Body('doc_id', new ParseIntPipe()) doc_id: number,
+    @Query('doc_id', new ParseIntPipe()) doc_id: number,
   ) {
     return this.userService.RemoveMarkedDocument(req.user.id_user, doc_id);
   }
@@ -125,7 +125,7 @@ export class UserController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 3000 }),
+          new MaxFileSizeValidator({ maxSize: 3000 * 1000 }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
         ],
         fileIsRequired: false,

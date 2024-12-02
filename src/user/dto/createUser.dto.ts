@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDate,
   IsDateString,
+  IsEmail,
   IsNotEmpty,
   IsOptional,
   IsPhoneNumber,
@@ -21,6 +22,8 @@ export class CreateUserDTO {
   @IsNotEmpty()
   @IsPhoneNumber('VN')
   phone_number: string;
+  @IsEmail()
+  email: string;
   @IsNotEmpty()
   @IsBoolean()
   @Transform(({ value }) => value != 'false')

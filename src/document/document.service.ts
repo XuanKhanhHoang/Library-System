@@ -217,7 +217,24 @@ export class DocumentService {
               return res;
             });
           });
-          await Promise.all(check);
+          const varCheck = data.variants.map((val) => val.isbn);
+          const vr = await Promise.all([
+            ...check,
+            service.document_variant.findFirst({
+              where: {
+                isbn: {
+                  in: varCheck,
+                },
+              },
+              select: {
+                document_id: true,
+              },
+            }),
+          ]);
+          // console.log(vr);
+          if (vr.pop() != undefined) {
+            throw new ConflictException('isbn is existed');
+          }
 
           // Create document and purchase records
           const [document_id, purchase_id] = await Promise.all([
@@ -315,7 +332,7 @@ export class DocumentService {
       }));
 
       await this.prismaService.$transaction(async (service: PrismaService) => {
-        service.document_image.deleteMany({
+        await service.document_image.deleteMany({
           where: {
             doc_id: document_id,
           },
@@ -414,18 +431,17 @@ export class DocumentService {
               document_id: true,
             },
           });
-          let d_ref_c = data.categories.map((val) => {
-            return service.document_ref_category.update({
-              where: {
-                document_id_category_id: {
-                  document_id,
-                  category_id: val,
-                },
-              },
-              data: {
-                category_id: val,
-              },
-            });
+          await service.document_ref_category.deleteMany({
+            where: {
+              document_id,
+            },
+          });
+          let d_ref_c = data.categories.map((val) => ({
+            category_id: val,
+            document_id,
+          }));
+          const ctg = service.document_ref_category.createMany({
+            data: d_ref_c,
           });
           let vrs = data.variants.map((val) => {
             return service.document_variant.upsert({
@@ -456,13 +472,8 @@ export class DocumentService {
               isbn: { notIn: data.variants.map((val) => val.isbn) },
             },
           });
-          let d_ref_cDel = service.document_ref_category.deleteMany({
-            where: {
-              document_id,
-              category_id: { notIn: data.categories.map((val) => val) },
-            },
-          });
-          let a = await Promise.all([...d_ref_c, ...vrs, vrsDel, d_ref_cDel]);
+
+          let a = await Promise.all([ctg, ...vrs, vrsDel]);
           return {
             status: 'success',
             message: `document with id is ${document_id} is updated`,

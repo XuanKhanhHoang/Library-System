@@ -73,8 +73,8 @@ export class DocumentController {
     @UploadedFiles(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 3000 }),
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+          new MaxFileSizeValidator({ maxSize: 3000 * 1000 }),
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|gif)$/ }),
         ],
         fileIsRequired: false,
       }),
@@ -112,7 +112,7 @@ export class DocumentController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 3000 }),
+          new MaxFileSizeValidator({ maxSize: 3000 * 1000 }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
         ],
         fileIsRequired: false,
@@ -132,7 +132,7 @@ export class DocumentController {
     @UploadedFiles(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 3000 }),
+          new MaxFileSizeValidator({ maxSize: 3000 * 1000 }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
         ],
         fileIsRequired: false,
@@ -142,6 +142,12 @@ export class DocumentController {
   ) {
     const documentResult = await this.documentService.UpdateDocument(data);
     if (documentResult.status === 'success') {
+      if (!files)
+        return {
+          status: 'success',
+          message: ` update successfully for document ID ${data.document_id}`,
+        };
+
       const imgStatus = await this.documentService.UploadImages(
         data.document_id,
         files,
