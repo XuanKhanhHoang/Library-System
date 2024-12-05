@@ -1,11 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["omitApi"]
 }
 
 datasource db {
@@ -14,152 +9,236 @@ datasource db {
 }
 
 model user {
-  id_user Int @id   @default(autoincrement())
-  user_name String
-  pass_word String
-  is_librian Boolean @default(false)
-  reader reader?
-  marked_document marked_document[]
+  id_user                         Int                       @id @default(autoincrement())
+  user_name                       String
+  pass_word                       String
+  name                            String
+  gender                          Boolean                   @default(true)
+  birth_date                      DateTime
+  phone_number                    String?
+  avatar                          String?
+  is_valid                        Boolean                   @default(true)
+  is_librian                      Boolean                   @default(false)
+  id_job_title                    Int?
+  id_major                        Int?
+  email                           String?                   @unique
+  document_pruchase               document_purchase[]
+  loan_request                    loan_request[]
+  loan_return_transaction_librian loan_return_transaction[] @relation("librarian")
+  loan_return_transaction         loan_return_transaction[] @relation("reader")
+  marked_document                 marked_document[]
+  job_title                       job_title?                @relation(fields: [id_job_title], references: [id_job_title], onDelete: SetNull)
+  major                           major?                    @relation(fields: [id_major], references: [id_major], onDelete: SetNull)
 
   @@map("users")
 }
-model major{        
-    id_major Int @id    @default(autoincrement())
-    major_name String
-    reader reader[]
-    document document[]
 
-    @@map("majors")
+model major {
+  id_major   Int    @id @default(autoincrement())
+  major_name String
+  user       user[]
+
+  @@map("majors")
 }
 
-model job_title{
-    id_job_title Int @id @default(autoincrement())
-    job_title_name  String
-    reader reader[]
+model job_title {
+  id_job_title   Int    @id @default(autoincrement())
+  job_title_name String
+  user           user[]
+
+  @@map("jobs_titles")
 }
 
-model reader{
-    id_reader Int @id   @default(autoincrement())
-    name    String
-    birth_date  DateTime
-    phone_number    String
-    gender     Boolean?                                      //Male:true , female:false
-    id_job_title    Int
-    id_user    Int      @unique
-    id_major    Int
-    user user @relation(fields:[id_user],references:[id_user]) //1-1   declare one time in optional model
-    job_title job_title @relation(fields:[id_job_title],references:[id_job_title])
-    major major @relation(fields:[id_major],references:[id_major]) //n-1 declare one time in n-model
-    loan_return_transaction loan_return_transaction[]
-    @@map("readers")
+model category {
+  id_category           Int                     @id @default(autoincrement())
+  category_name         String
+  document_ref_category document_ref_category[]
+
+  @@map("categories")
 }
 
-model category{
-    id_category Int @id @default(autoincrement())
-    category_name   String
-    document document[]
-    @@map("categories")
+model document_ref_category {
+  document_id Int
+  category_id Int
+  category    category @relation(fields: [category_id], references: [id_category], onDelete: Cascade)
+  document    document @relation(fields: [document_id], references: [document_id], onDelete: Cascade)
+
+  @@id([document_id, category_id])
 }
 
-model author{
-    id_author   Int @id @default(autoincrement())
-    author_name String 
-    document document[]
-    @@map("authors")
+model document_variant {
+  isbn                  String                  @id
+  document_id           Int?
+  name                  String
+  quantity              Int
+  published_date        DateTime
+  document_puchase_list document_puchase_list[]
+  document              document?               @relation(fields: [document_id], references: [document_id], onDelete: SetNull)
+  loan_list_document    loan_list_document[]
+
+  @@map("document_variants")
 }
 
-model publisher{
-    id_publisher    Int     @id @default(autoincrement())
-    publisher_name  String
-    document document[]
-    @@map("publishers")
+model document {
+  document_id                Int                          @id @default(autoincrement())
+  document_name              String
+  id_author                  Int?
+  id_publisher               Int?
+  description                String?
+  image                      document_image[]
+  document_ref_category      document_ref_category[]
+  variants                   document_variant[]
+  author                     author?                      @relation(fields: [id_author], references: [id_author], onDelete: SetNull)
+  publisher                  publisher?                   @relation(fields: [id_publisher], references: [id_publisher], onDelete: SetNull)
+  loan_request_list_document loan_request_list_document[]
+  marked                     marked_document[]
+
+  @@map("documents")
 }
 
-model document{
-    id_document     Int @id @default(autoincrement())
-    document_name   String
-    publish_year    DateTime
-    quantity    Int
-    id_major    Int
-    id_author   Int
-    id_publisher    Int
-    id_category     Int
-    description String
-    image       String
-    status      String
-    major major @relation(fields:[id_major],references:[id_major])
-    author author @relation(fields: [id_author], references: [id_author])
-    publisher publisher @relation(fields: [id_publisher], references: [id_publisher])
-    category category   @relation(fields: [id_category], references: [id_category])
-    purchase document_purchase[]
-    loan_return_transaction loan_return_transaction[]
-    loan_request_list_document loan_request_list_document[]
+model document_purchase {
+  id_purchase           Int                     @id @default(autoincrement())
+  id_supplier           Int?
+  purchase_date         DateTime
+  id_librarian          Int?
+  document_puchase_list document_puchase_list[]
+  user                  user?                   @relation(fields: [id_librarian], references: [id_user], onDelete: SetNull)
+  supplier              supplier?               @relation(fields: [id_supplier], references: [id_supplier], onDelete: SetNull)
 
-    @@map("documents")
+  @@map("document_puchases")
 }
 
-model supplier{
-    id_supplier Int @id @default(autoincrement())
-    supplier_name   Int
-    purchase document_purchase[]
-    @@map("suppliers")
+model document_puchase_list {
+  id                Int               @default(autoincrement())
+  isbn              String?
+  purchase_id       Int
+  quantity          Int
+  price             Int
+  variant           document_variant? @relation(fields: [isbn], references: [isbn], onDelete: SetNull)
+  document_purchase document_purchase @relation(fields: [purchase_id], references: [id_purchase])
+
+  @@id(id)
 }
 
-model document_purchase{
-    id_purchase Int @id @default(autoincrement())
-    id_document     Int
-    id_supplier Int
-    purchase_date   DateTime
-    quantity    Int
-    supplier supplier @relation(fields:[id_supplier],references:[id_supplier])
-    document document @relation(fields:[id_document],references:[id_document])
-    @@map("document_puchases")
+model loan_request {
+  id_loan_request             Int                          @id @default(autoincrement())
+  id_reader                   Int?
+  create_at                   DateTime                     @default(now())
+  status_id                   Int                          @default(1)
+  expected_date               DateTime                     @default(now())
+  transaction_id              Int?                         @unique
+  loan_request_list_documents loan_request_list_document[]
+  user                        user?                        @relation(fields: [id_reader], references: [id_user], onDelete: SetNull)
+  status                      loan_request_status          @relation(fields: [status_id], references: [id])
+  loan_return_transaction     loan_return_transaction?     @relation(fields: [transaction_id], references: [id_loan_return], onDelete: SetNull)
+
+  @@map("loan_requests")
 }
 
-model loan_request{
-    id_loan_request  Int @id @default(autoincrement())
-    id_document     Int
-    loan_date DateTime
-    due_date    DateTime
-    loan_return_transaction loan_return_transaction[]
-    @@map("loan_requests")
+model loan_request_status {
+  name         String
+  id           Int            @id @default(autoincrement())
+  loan_request loan_request[]
 }
 
-model loan_request_list_document{
-    id Int @id @default(autoincrement())
-    id_loan_request  Int
-    quantity    Int         
-    id_document Int     
-    document document @relation(fields:[id_document],references:[id_document])
-    @@map("loan_request_list_documents")
-}
-model punishment{
-    id_punish   Int @id @default(autoincrement())
-    reason String
-    loan_return_transaction loan_return_transaction[]
-    @@map("punishments")
+model loan_list_document {
+  quantity                Int
+  isbn                    String
+  id_loan_return          Int
+  note                    String                  @db.VarChar(300)
+  loan_return_transaction loan_return_transaction @relation(fields: [id_loan_return], references: [id_loan_return])
+  variant                 document_variant        @relation(fields: [isbn], references: [isbn])
+
+  @@id([id_loan_return, isbn])
+  @@map("loan_list_documents")
 }
 
-model loan_return_transaction{
-    id_loan_return    Int @id @default(autoincrement())
-    id_loan_request     Int
-    id_reader   Int
-    id_document     Int
-    id_punish   Int
-    return_date DateTime
-    return_status   String
-    document document @relation(fields:[id_document],references:[id_document])
-    punishment punishment @relation(fields:[id_punish],references:[id_punish])
-    reader reader @relation(fields: [id_reader], references: [id_reader])
-    loan_request loan_request @relation(fields: [id_loan_request], references: [id_loan_request])
+model loan_request_list_document {
+  id_loan_request Int
+  quantity        Int
+  document_id     Int
+  document        document     @relation(fields: [document_id], references: [document_id])
+  loan_request    loan_request @relation(fields: [id_loan_request], references: [id_loan_request])
 
-    @@map("loan_return_transactions")
+  @@id([document_id, id_loan_request])
+  @@map("loan_request_list_document")
 }
-model marked_document{
-    id Int @id @default(autoincrement())
-    id_user Int 
-    id_document Int
-    user user @relation(fields: [id_user],references: [id_user])
 
-    @@map("marked_documents")
+model loan_return_transaction {
+  id_loan_return     Int                  @id @default(autoincrement())
+  id_reader          Int?
+  id_punish          Int?
+  return_date        DateTime?
+  create_at          DateTime             @default(now())
+  id_librarian       Int?
+  due_date           DateTime
+  loan_list_document loan_list_document[]
+  loan_request       loan_request?
+  librian            user?                @relation("librarian", fields: [id_librarian], references: [id_user], onDelete: SetNull)
+  punishment         punishment?          @relation(fields: [id_punish], references: [id_punish], onDelete: SetNull)
+  user               user?                @relation("reader", fields: [id_reader], references: [id_user], onDelete: SetNull)
+
+  @@map("loan_return_transactions")
+}
+
+model marked_document {
+  id          Int      @id @default(autoincrement())
+  id_reader   Int
+  document_id Int
+  document    document @relation(fields: [document_id], references: [document_id], onDelete: Cascade)
+  reader      user     @relation(fields: [id_reader], references: [id_user], onDelete: Cascade)
+
+  @@map("marked_documents")
+}
+
+model author {
+  id_author   Int        @id @default(autoincrement())
+  author_name String
+  document    document[]
+
+  @@map("authors")
+}
+
+model publisher {
+  id_publisher   Int        @id @default(autoincrement())
+  publisher_name String
+  document       document[]
+
+  @@map("publishers")
+}
+
+model supplier {
+  id_supplier   Int                 @id @default(autoincrement())
+  supplier_name String
+  purchase      document_purchase[]
+
+  @@map("suppliers")
+}
+
+model document_image {
+  id       Int      @id @default(autoincrement())
+  doc_id   Int
+  image    String
+  document document @relation(fields: [doc_id], references: [document_id], onDelete: Cascade)
+
+  @@map("document_images")
+}
+
+model punishment {
+  id_punish               Int                       @id @default(autoincrement())
+  reason                  String
+  is_handled              Boolean                   @default(false)
+  cost                    Int
+  loan_return_transaction loan_return_transaction[]
+
+  @@map("punishments")
+}
+
+model otp_code_queue {
+  id            Int      @id @default(autoincrement())
+  code          Int
+  email         String
+  invalid_time  DateTime
+  otp_code_type Int      @default(1)
+  is_valid      Boolean  @default(true)
 }

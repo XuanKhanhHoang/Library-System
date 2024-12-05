@@ -9,7 +9,7 @@ services:
     volumes:
       - postgres_volume_data:/var/lib/postgresql/data
     ports:
-      - ${DB_POSTGRES_PORT:?error}:5432
+      - 5432:${DB_POSTGRES_PORT:?error}
   redis:
     image: redis:6.0.7
     container_name: library_system_redis_caching
@@ -17,7 +17,7 @@ services:
     volumes:
       - redis_volume_data:/data
     ports:
-      - ${REDIS_PORT:?error}:6379
+      - 6379:${REDIS_PORT:?error}
 volumes:
   redis_volume_data:
   postgres_volume_data:
