@@ -255,7 +255,7 @@ export class UserService {
     return { message: 'delete successfully', status: 'success' };
   }
   async GetNumberUserOfType() {
-    let sql = `select count(*) as quantity,job_title_name from( select id_job_title from users where is_valid = true )u join jobs_titles jt ON u.id_job_title =jt.id_job_title group  by job_title_name `;
+    let sql = `select count(*) as quantity,job_title_name from( select id_job_title from users where is_valid = true and is_librian = false )u join jobs_titles jt ON u.id_job_title =jt.id_job_title group  by job_title_name `;
     let results = (await this.prismaService.$queryRawUnsafe(sql)) as {
       quantity: BigInt;
       job_title_name: string;

@@ -24,7 +24,7 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly mailerService: MailerService,
   ) {}
-  private mailer_name = `"UTC LIB SYSTEM " <Khanhpopo056@gmail.com>`;
+  private mailer_name = `"UTC LIB SYSTEM "`;
   async Login(body: LoginDTO, isManager = false): Promise<LoginResultDTO> {
     let { pass_word: userLoginPassword, user_name: userName } = body;
     userName = userName.toLocaleLowerCase();
@@ -166,7 +166,7 @@ export class AuthService {
       is_librian: false,
     });
     const makeChangePasswordLink = (access_token: string, email: string) =>
-      `http://localhost:3000/auth/reset_password?access_token=${encodeURIComponent(
+      `https://xnxcp7lm-3000.asse.devtunnels.ms/auth/reset_password?access_token=${encodeURIComponent(
         access_token,
       )}&email=${encodeURI(email)}`;
     try {
@@ -187,7 +187,7 @@ export class AuthService {
       border-radius: 5px;
       font-size: 0.9rem;
   ">Click vào đây để thay đổi mật khẩu </a>
-      <div>Link này hết hạn trong 2 giờ.</div>
+      <div>Link này hết hạn trong 15'.</div>
   `, // html body
       });
       return {

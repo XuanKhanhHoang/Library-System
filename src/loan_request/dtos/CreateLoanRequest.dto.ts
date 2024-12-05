@@ -4,7 +4,9 @@ import { IsArray, IsDate, IsNumber, Min } from 'class-validator';
 export class CreateLoanRequest {
   @IsDate()
   @Transform(({ value }) => {
-    return new Date(decodeURIComponent(value));
+    let a = new Date(decodeURIComponent(value));
+    console.log(a);
+    return a;
   })
   create_at: Date;
   @IsDate()
